@@ -144,7 +144,7 @@ export function UserFormDialog({ open, onClose, onSuccess, user }: UserFormDialo
         for (const employeeId of formData.employee_ids) {
           const employee = pegawaiList.find(p => p.id === employeeId)
           if (!employee) continue
-          const email = `${employee.employee_code.toLowerCase()}@goetengrs.com`
+          const email = `${employee.employee_code.toLowerCase()}@sungaibahar.com`
           const response = await fetch('/api/users/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

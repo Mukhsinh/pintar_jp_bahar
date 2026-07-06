@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       const isSuperAdmin =
         appRole === 'superadmin' ||
         userRole === 'superadmin' ||
-        email === 'admin@goetengrs.com'
+        email === 'admin@sungaibahar.com'
 
       if (isSuperAdmin) {
         currentEmployee = {

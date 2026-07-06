@@ -1,0 +1,86 @@
+INSERT INTO "public"."m_kpi_categories" ("id", "unit_id", "category", "category_name", "weight_percentage", "configuration_style", "description", "is_active", "created_at", "updated_at", "is_weighted") VALUES 
+  ('05c13262-ea42-4c19-b2c0-baa38ab450f0', '2bc2bbca-54e5-4fee-b643-15a7dcccdefc', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-13 03:25:45.233+00', '2026-06-13 03:25:45.233+00', true),
+  ('0aac174c-efbc-4201-9f12-dd9822df81e8', '2bc2bbca-54e5-4fee-b643-15a7dcccdefc', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-13 03:25:45.360702+00', '2026-06-13 03:25:45.360702+00', true),
+  ('12c2b31b-a5c6-4cad-8525-ed492b860d0f', 'f7d5cbec-b7ed-4e53-8ae6-6e915bc99d93', 'P1', 'posisi', '0.00', 'percentage', 'kelas jabatan', true, '2026-06-13 03:46:29.942221+00', '2026-06-13 03:46:29.942221+00', false),
+  ('12ec1cb1-a234-4296-9477-df5ac4bc6977', 'd5e0599e-653e-42f7-be7b-beb83e57d7e5', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-13 03:14:19.233886+00', '2026-06-13 03:14:19.233886+00', true),
+  ('2c7633c4-924a-4827-950c-d8af77a01086', '2b99ce41-dae4-48d7-9f78-70e070795da3', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-13 03:26:42.770237+00', '2026-06-13 03:26:42.770237+00', true),
+  ('484a9e05-38f7-4343-8542-8f71a4b954d3', 'b5af50fb-0d6a-44a9-af59-87ea2448282e', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-13 03:16:58.950793+00', '2026-06-13 03:16:58.950793+00', true),
+  ('4895d716-3f6e-4fb4-a9e3-126dbaebadbe', '02792972-175b-4ed9-b74b-285aa06980b3', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-21 06:41:21.474179+00', '2026-06-21 06:41:21.474179+00', true),
+  ('4f76a45d-51a0-4e85-bc11-c74e26b5eb37', '291511ea-911a-4414-a88f-797e268f5a9e', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-13 03:21:31.770279+00', '2026-06-13 03:21:31.770279+00', true),
+  ('4f9e3dea-4dcc-4231-a22f-4b5c8d08329d', '016b5bee-f925-441e-9e5f-2b93fa588edd', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-13 03:18:55.060266+00', '2026-06-13 03:18:55.060266+00', true),
+  ('51a5f57d-b1a2-405c-9a5f-7b2639c18322', '3e0d63cb-885e-4d4b-8b40-51b62774d52f', 'P2', 'Kinerja', '71.00', 'percentage', '-', true, '2026-06-08 07:21:46.334088+00', '2026-06-21 11:56:42.651459+00', true),
+  ('51c0a694-70a3-4eae-b60b-9bede528505c', '3e0d63cb-885e-4d4b-8b40-51b62774d52f', 'P3', 'Tupoksi Tambahan', '0.00', 'activity', '-', true, '2026-06-08 09:11:10.500476+00', '2026-06-08 09:11:10.500476+00', false),
+  ('5264b877-c5ec-4e1c-af52-0a30150ecd69', '983ee3ed-1a23-4707-9d2d-8c4eafdcb07f', 'P2', 'KINERJA', '0.00', 'percentage', null, true, '2026-06-21 07:51:32.377402+00', '2026-06-21 07:51:32.377402+00', true),
+  ('577d499e-ec02-4520-964b-852b7a018625', '821ce7b9-8814-497a-a81c-7679ba3e0241', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-13 03:22:59.900507+00', '2026-06-13 03:22:59.900507+00', true),
+  ('592b4d1f-affb-44fa-9b30-7d7f617576d2', '30ae9e7f-1296-44e1-83c3-f92817592c80', 'P1', 'Posisi', '0.00', 'percentage', 'Posisi', true, '2026-06-23 01:13:08.522603+00', '2026-06-23 01:13:08.522603+00', false),
+  ('5a012b2a-c00d-4dca-b1e2-5648456811d4', '434924a8-eefb-4a38-bda5-97a9bb3f5ded', 'P1', 'Posisi', '0.00', 'percentage', 'Posisi', true, '2026-06-13 03:36:38.879588+00', '2026-06-13 03:36:38.879588+00', false),
+  ('5de2d9a4-99b0-433c-b843-520e270a2428', '2b99ce41-dae4-48d7-9f78-70e070795da3', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-13 03:26:42.899215+00', '2026-06-13 03:26:42.899215+00', true),
+  ('60b737b2-08db-495d-975a-22b67a8b3cdf', 'defc08a6-60f5-4707-aa2c-c0c530133e81', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-13 03:23:45.474773+00', '2026-06-13 03:23:45.474773+00', true),
+  ('66412cd5-17c7-49c6-8a41-a407b6bbc0d5', 'd5e0599e-653e-42f7-be7b-beb83e57d7e5', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-13 03:14:19.396054+00', '2026-06-13 03:14:19.396054+00', true),
+  ('6878cadb-0fb4-4cdc-b7cd-23debef82cfb', '02792972-175b-4ed9-b74b-285aa06980b3', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-21 06:41:21.342862+00', '2026-06-21 06:41:21.342862+00', true),
+  ('6cd10ae5-7bc2-47db-a065-f66eb070f73a', '821ce7b9-8814-497a-a81c-7679ba3e0241', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-13 03:23:00.219457+00', '2026-06-13 03:23:00.219457+00', true),
+  ('7227bc1e-3d72-4b20-a845-1402f8aaad5a', 'defc08a6-60f5-4707-aa2c-c0c530133e81', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-13 03:23:45.669078+00', '2026-06-13 03:23:45.669078+00', true),
+  ('80b85abf-9c9d-43a0-b714-5860a1122dbf', '398d11b1-523d-478c-ac38-61caffb9fec0', 'P2', 'Kinerja', '0.00', 'activity', 'Kinerja berbass fee for service dan proporsional', true, '2026-06-08 14:29:31.40612+00', '2026-06-08 14:29:31.40612+00', false),
+  ('885e0e1a-3d56-4b11-9fd8-0383fa8781b9', '821ce7b9-8814-497a-a81c-7679ba3e0241', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-13 03:23:00.080171+00', '2026-06-13 03:23:00.080171+00', true),
+  ('8f658090-ecb2-45ea-bc66-2857e43ae817', 'b5af50fb-0d6a-44a9-af59-87ea2448282e', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-13 03:16:58.7699+00', '2026-06-13 03:16:58.7699+00', true),
+  ('99e0078c-6910-4c4b-8779-1badbb7ff283', '016b5bee-f925-441e-9e5f-2b93fa588edd', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-13 03:18:55.194438+00', '2026-06-13 03:18:55.194438+00', true),
+  ('9dff944c-d58e-4ba8-b229-ff85319d972b', '6a10cf3d-52bc-47e1-87c1-c15b0c93f73f', 'P2', 'KINERJA', '0.00', 'percentage', null, true, '2026-06-21 06:44:15.047768+00', '2026-06-21 06:44:15.047768+00', true),
+  ('aa3aaf9f-0e92-470a-ac07-890724c2e02a', '6a10cf3d-52bc-47e1-87c1-c15b0c93f73f', 'P1', 'Posisi', '100.00', 'percentage', 'Pendidikan dan Masa kerja', true, '2026-06-21 06:44:15.198112+00', '2026-06-21 06:44:15.198112+00', true),
+  ('b668a8f6-7986-46e8-b621-03ba9bae1e13', '79c5b3c9-5b85-4fc2-adbd-959ad8e85a77', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-13 04:15:42.85702+00', '2026-06-13 04:15:42.85702+00', true),
+  ('bc0f7028-8556-403a-8246-12fdb3162b4d', '79c5b3c9-5b85-4fc2-adbd-959ad8e85a77', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-13 04:15:42.720629+00', '2026-06-13 04:15:42.720629+00', true),
+  ('bd24a132-b94c-4b74-abe4-ad8ac70f9153', 'defc08a6-60f5-4707-aa2c-c0c530133e81', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-13 03:23:45.308284+00', '2026-06-13 03:23:45.308284+00', true),
+  ('c3cb13cf-0683-4ca4-bb60-6c90c811a932', '983ee3ed-1a23-4707-9d2d-8c4eafdcb07f', 'P1', 'Posisi', '100.00', 'percentage', 'Pendidikan dan Masa kerja', true, '2026-06-21 07:51:32.512496+00', '2026-06-21 07:51:32.512496+00', true),
+  ('c9a43676-f808-4c07-81a6-bd3eefb859c6', 'd5e0599e-653e-42f7-be7b-beb83e57d7e5', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-13 03:14:19.545515+00', '2026-06-13 03:14:19.545515+00', true),
+  ('ca509b11-e53d-45dc-ba59-b319a0b7a872', '3e0d63cb-885e-4d4b-8b40-51b62774d52f', 'P1', 'Posisi', '29.00', 'percentage', 'Pendidikan dan Pengalaman/Masa Kerja', true, '2026-06-08 07:17:46.70694+00', '2026-06-21 11:55:20.828852+00', true),
+  ('cee49b09-e7a1-474c-b447-e60952833c29', '02792972-175b-4ed9-b74b-285aa06980b3', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-21 06:41:21.604316+00', '2026-06-21 06:41:21.604316+00', true),
+  ('d2acd7db-fdad-46fd-b019-60007b2a2392', 'f1e982fe-17a7-4517-b38f-1383fcdb3467', 'P1', 'Posisi', '100.00', 'percentage', 'Pendidikan dan Masa kerja', true, '2026-06-15 01:01:41.402766+00', '2026-06-15 02:30:33.710546+00', true),
+  ('d5e8d13a-18b8-4e00-a310-a62c8eac67ee', '291511ea-911a-4414-a88f-797e268f5a9e', 'P2', 'Kinerja', '10.00', 'percentage', 'Kinerja', true, '2026-06-13 03:21:31.899696+00', '2026-06-13 03:21:31.899696+00', true),
+  ('d71c1ffd-01cd-4f94-a82d-8bf3a60b6401', 'b5af50fb-0d6a-44a9-af59-87ea2448282e', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-13 03:16:59.082269+00', '2026-06-13 03:16:59.082269+00', true),
+  ('dccc8cfa-e3b4-4785-a474-bf0e9e97b0ac', '2b99ce41-dae4-48d7-9f78-70e070795da3', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-13 03:26:42.635778+00', '2026-06-13 03:26:42.635778+00', true),
+  ('e9bd3c08-3f21-4a2f-9b25-2056965c54d8', '79c5b3c9-5b85-4fc2-adbd-959ad8e85a77', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-13 04:15:42.584986+00', '2026-06-13 04:15:42.584986+00', true),
+  ('ea5dfbc4-f6d0-4e66-a2f6-f3ca84cdd42b', '2bc2bbca-54e5-4fee-b643-15a7dcccdefc', 'P1', 'Posisi', '90.00', 'percentage', 'Kualifikasi Index
+Status Index
+Position Index
+Employment Index
+IKU (Indikator Kinerja Unit)', true, '2026-06-13 03:25:45.091225+00', '2026-06-13 03:25:45.091225+00', true),
+  ('ebc6e7fc-c2de-42fa-bd76-af7364c63208', '398d11b1-523d-478c-ac38-61caffb9fec0', 'P1', 'Posisi', '0.00', 'activity', 'Garansi Fee', true, '2026-06-08 14:23:16.196967+00', '2026-06-13 05:51:49.312378+00', false),
+  ('f7bbe82d-5e06-4e9c-a819-bcc5d6cf2c08', '016b5bee-f925-441e-9e5f-2b93fa588edd', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-13 03:18:55.328764+00', '2026-06-13 03:18:55.328764+00', true),
+  ('fcc0eb31-edca-47d8-b7d8-30f0ebfba9e6', '291511ea-911a-4414-a88f-797e268f5a9e', 'P3', 'Perilaku', '0.00', 'percentage', 'Keaktifan', true, '2026-06-13 03:21:32.050096+00', '2026-06-13 03:21:32.050096+00', true),
+  ('fecb5649-b859-4340-90b5-02ffbda5253c', 'f1e982fe-17a7-4517-b38f-1383fcdb3467', 'P2', 'KINERJA', '0.00', 'percentage', null, true, '2026-06-15 02:48:30.639979+00', '2026-06-15 02:48:30.639979+00', false)
+ON CONFLICT (id) DO NOTHING;

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const isSuperAdmin =
       appRole === 'superadmin' ||
       userRole === 'superadmin' ||
-      authUser.email?.toLowerCase() === 'admin@goetengrs.com'
+      authUser.email?.toLowerCase() === 'admin@sungaibahar.com'
 
     if (!isSuperAdmin) {
       return NextResponse.json({ success: false, error: 'Tidak memiliki akses' }, { status: 403 })

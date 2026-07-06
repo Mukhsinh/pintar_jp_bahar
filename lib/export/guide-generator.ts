@@ -13,7 +13,7 @@ export async function generateSystemGuide(unitId?: string): Promise<Buffer> {
 
   let appSettings = {
     appName: 'JASPEL',
-    organizationName: 'RSUD dr. R. GOETENG TAROENADIBRATA',
+    organizationName: 'RUMAH SAKIT SUNGAI BAHAR',
     footerText: ''
   }
 
@@ -30,13 +30,13 @@ export async function generateSystemGuide(unitId?: string): Promise<Buffer> {
   // Professional Kop Surat
   doc.setFontSize(14)
   doc.setFont('helvetica', 'bold')
-  doc.text('PEMERINTAH KABUPATEN PURBALINGGA', 105, 15, { align: 'center' })
+  doc.text('PEMERINTAH KABUPATEN MUARO JAMBI', 105, 15, { align: 'center' })
   doc.setFontSize(16)
   doc.text(appSettings.organizationName, 105, 22, { align: 'center' })
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  doc.text('Jl. Tentara Pelajar No. 08, Purbalingga, Jawa Tengah', 105, 28, { align: 'center' })
-  doc.text('Telepon: (0281) 891016 | Email: rsudgoeteng@purbalinggakab.go.id', 105, 33, { align: 'center' })
+  doc.text('Kabupaten Muaro Jambi, Provinsi Jambi', 105, 28, { align: 'center' })
+  doc.text('Email: admin@sungaibahar.com', 105, 33, { align: 'center' })
 
   doc.setLineWidth(0.5)
   doc.line(20, 38, 190, 38)

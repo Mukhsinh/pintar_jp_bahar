@@ -69,7 +69,7 @@ export default function KPIConfigPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const authRole = user.app_metadata?.role || user.user_metadata?.role
-        const isSuperAdmin = authRole === 'superadmin' || user.email === 'admin@goetengrs.com'
+        const isSuperAdmin = authRole === 'superadmin' || user.email === 'admin@sungaibahar.com'
         const role = isSuperAdmin ? 'superadmin' : (authRole || 'employee')
 
         setUserMetadata({

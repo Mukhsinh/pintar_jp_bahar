@@ -666,7 +666,7 @@ export async function generateSystemOverviewPDF(): Promise<Uint8Array> {
   doc.setFontSize(12)
   doc.setTextColor(44, 62, 80)
   doc.setFont('helvetica', 'bold')
-  doc.text(companyInfo.name || 'RSUD dr. R. Goeteng Taroenadibrata', centerX, 230, { align: 'center' })
+  doc.text(companyInfo.name || 'Rumah Sakit Sungai Bahar', centerX, 230, { align: 'center' })
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(11)
@@ -831,7 +831,7 @@ export async function generateSystemOverviewPDF(): Promise<Uint8Array> {
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(11)
-  const closing = `Dengan diterapkannya ${appName}, diharapkan manajemen RSUD dr. R. Goeteng Taroenadibrata dapat mengelola sumber daya manusia dan keuangan secara lebih profesional, transparan, dan berbasis kinerja nyata.`
+  const closing = `Dengan diterapkannya ${appName}, diharapkan manajemen Rumah Sakit Sungai Bahar dapat mengelola sumber daya manusia dan keuangan secara lebih profesional, transparan, dan berbasis kinerja nyata.`
   const splitClosing = doc.splitTextToSize(closing, pageWidth - 30)
   doc.text(splitClosing, 15, y); y += (splitClosing.length * 6) + 20
 

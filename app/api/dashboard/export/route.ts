@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
         }
 
-        const isSuperAdmin = user.app_metadata?.role === 'superadmin' || user.email === 'admin@goetengrs.com'
+        const isSuperAdmin = user.app_metadata?.role === 'superadmin' || user.email === 'admin@sungaibahar.com'
 
         if (!employee.role && isSuperAdmin) {
             employee.role = 'superadmin'

@@ -26,7 +26,7 @@ export interface UserWithPegawai {
   } | null
 }
 
-const SUPERADMIN_EMAIL = 'admin@goetengrs.com'
+const SUPERADMIN_EMAIL = 'admin@sungaibahar.com'
 
 /**
  * Server action to get users from m_employees joined with auth

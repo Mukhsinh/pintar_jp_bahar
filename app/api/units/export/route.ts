@@ -52,13 +52,13 @@ export async function GET(request: NextRequest) {
       // Kop Surat
       doc.setFontSize(14)
       doc.setFont('helvetica', 'bold')
-      doc.text('PEMERINTAH KABUPATEN PURBALINGGA', 105, 15, { align: 'center' })
+      doc.text('PEMERINTAH KABUPATEN MUARO JAMBI', 105, 15, { align: 'center' })
       doc.setFontSize(16)
-      doc.text('RSUD dr. R. GOETENG TAROENADIBRATA', 105, 22, { align: 'center' })
+      doc.text('RUMAH SAKIT SUNGAI BAHAR', 105, 22, { align: 'center' })
       doc.setFontSize(10)
       doc.setFont('helvetica', 'normal')
-      doc.text('Jl. Tentara Pelajar No. 08, Purbalingga, Jawa Tengah', 105, 28, { align: 'center' })
-      doc.text('Telepon: (0281) 891016 | Email: rsudgoeteng@purbalinggakab.go.id', 105, 33, { align: 'center' })
+      doc.text('Kabupaten Muaro Jambi, Provinsi Jambi', 105, 28, { align: 'center' })
+      doc.text('Email: admin@sungaibahar.com', 105, 33, { align: 'center' })
 
       // Line separator
       doc.setLineWidth(0.5)
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
       const finalY = (doc as any).lastAutoTable.finalY || 70
       doc.setFontSize(10)
       doc.setFont('helvetica', 'normal')
-      doc.text(`Purbalingga, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 140, finalY + 20)
+      doc.text(`Sungai Bahar, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 140, finalY + 20)
       doc.text('Kepala Bagian Umum,', 140, finalY + 25)
 
       doc.setFont('helvetica', 'bold')
@@ -152,8 +152,8 @@ export async function GET(request: NextRequest) {
 
       // Header for Excel
       const header = [
-        ['PERSERIKATAN RUMAH SAKIT UMUM DAERAH'],
-        ['RSUD dr. R. GOETENG TAROENADIBRATA PURBALINGGA'],
+        ['RUMAH SAKIT SUNGAI BAHAR'],
+        ['Kabupaten Muaro Jambi, Provinsi Jambi'],
         ['DAFTAR UNIT KERJA'],
         [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
         []

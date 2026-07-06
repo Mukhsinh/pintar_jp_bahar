@@ -34,9 +34,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 async function setupSuperadmin() {
   console.log('🚀 Memulai setup superadmin...\n')
 
-  const email = 'mukhsin9@gmail.com'
-  const password = 'Jlamprang233!!'
-  const fullName = 'Mukhsin'
+  const email = 'admin@sungaibahar.com'
+  const password = 'admin123'
+  const fullName = 'Admin Sungai Bahar'
   const employeeCode = 'SA001'
 
   try {

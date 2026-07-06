@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const isSuperAdmin =
       appRole === 'superadmin' ||
       userRole === 'superadmin' ||
-      user.email === 'admin@goetengrs.com'
+      user.email === 'admin@sungaibahar.com'
 
     const searchParams = request.nextUrl.searchParams
     const format = searchParams.get('format') || 'excel'
@@ -60,12 +60,12 @@ export async function GET(request: NextRequest) {
       // Formal KOP Surat
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(14)
-      doc.text('RSUD dr. R. GOETENG TAROENADIBRATA PURBALINGGA', 148.5, 15, { align: 'center' })
+      doc.text('RUMAH SAKIT SUNGAI BAHAR', 148.5, 15, { align: 'center' })
 
       doc.setFontSize(10)
       doc.setFont('helvetica', 'normal')
-      doc.text('Jl. Tentara Pelajar No. 15, Purbalingga, Jawa Tengah', 148.5, 21, { align: 'center' })
-      doc.text('Telepon: (0281) 891110 | Website: rsudgoeteng.purbalinggakab.go.id', 148.5, 26, { align: 'center' })
+      doc.text('Kabupaten Muaro Jambi, Provinsi Jambi', 148.5, 21, { align: 'center' })
+      doc.text('Telepon: - | Website: -', 148.5, 26, { align: 'center' })
 
       // Line separator
       doc.setLineWidth(0.5)
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
       // Signature area on final page
       const finalY = (doc as any).lastAutoTable.finalY + 15
       if (finalY < 180) {
-        doc.text('Purbalingga, ' + reportDate, 230, finalY)
+        doc.text('Sungai Bahar, ' + reportDate, 230, finalY)
         doc.text('Admin Sistem,', 230, finalY + 7)
         doc.text('( ____________________ )', 230, finalY + 30)
       }
@@ -137,8 +137,8 @@ export async function GET(request: NextRequest) {
     } else {
       // Generate Excel with formal header
       const worksheetData = [
-        ['RSUD dr. R. GOETENG TAROENADIBRATA PURBALINGGA'],
-        ['Jl. Tentara Pelajar No. 15, Purbalingga, Jawa Tengah'],
+        ['RUMAH SAKIT SUNGAI BAHAR'],
+        ['Kabupaten Muaro Jambi, Provinsi Jambi'],
         ['LAPORAN DATA PEGAWAI'],
         [`Tanggal Laporan: ${reportDate}`],
         [], // Empty row

@@ -116,7 +116,7 @@ function useAuth() {
         const { data: { user: authUser } } = await supabase.auth.getUser()
         if (authUser) {
           const authRole = authUser.app_metadata?.role || authUser.user_metadata?.role
-          const isSuperAdmin = authRole === 'superadmin' || authUser.email === 'admin@goetengrs.com'
+          const isSuperAdmin = authRole === 'superadmin' || authUser.email === 'admin@sungaibahar.com'
           const role = isSuperAdmin ? 'superadmin' : (authRole || 'employee')
 
           const { data: emp } = await supabase
@@ -273,7 +273,7 @@ export default function Sidebar() {
                     className="leading-tight uppercase font-black tracking-tight text-[#f97316] break-words"
                     style={{ fontSize: '19px' }}
                   >
-                    {companyInfo?.appName || 'RSUD GOETENG'}
+                    {companyInfo?.appName || 'PINTAR JP'}
                   </h1>
                   <p className="text-[10px] font-medium text-blue-100 uppercase tracking-wide opacity-90 mt-0.5 leading-tight line-clamp-2">
                     {companyInfo?.name || 'Management System'}

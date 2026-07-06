@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     const isSuperAdmin =
       appRole === 'superadmin' ||
       userRole === 'superadmin' ||
-      email === 'admin@goetengrs.com'
+      email === 'admin@sungaibahar.com'
 
     // Use admin client for superadmin to bypass RLS, otherwise regular client
     const fetchClient = isSuperAdmin ? await createAdminClient() : supabase

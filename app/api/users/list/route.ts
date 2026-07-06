@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const isSuperAdmin =
       appRole === 'superadmin' ||
       userRole === 'superadmin' ||
-      user.email === 'admin@goetengrs.com'
+      user.email === 'admin@sungaibahar.com'
 
     if (!isSuperAdmin) {
       return NextResponse.json(

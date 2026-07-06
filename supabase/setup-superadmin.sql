@@ -20,10 +20,10 @@ INSERT INTO m_employees (
   is_active
 ) VALUES (
   'SA001',
-  'Mukhsin',
+  'Admin Sungai Bahar',
   (SELECT id FROM m_units WHERE code = 'IT'),
   'superadmin',
-  'mukhsin9@gmail.com',
+  'admin@sungaibahar.com',
   'TK/0',
   true
 )
@@ -41,4 +41,4 @@ SELECT
   role,
   is_active
 FROM m_employees 
-WHERE email = 'mukhsin9@gmail.com';
+WHERE email = 'admin@sungaibahar.com';

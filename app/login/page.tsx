@@ -92,8 +92,8 @@ export default function LoginPage() {
   }
 
   const companyInfo = settings?.companyInfo
-  const logoSrc = companyInfo?.logo || "/Logo rsud goeteng.jpeg"
-  const orgName = companyInfo?.name || "RSUD Goeteng"
+  const logoSrc = companyInfo?.logo || "/logo.png"
+  const orgName = companyInfo?.name || "RS Sungai Bahar"
 
   return (
     <div className="h-screen flex flex-col items-center justify-center bg-gray-50/50 p-2 font-sans overflow-hidden">
@@ -209,7 +209,11 @@ export default function LoginPage() {
       {/* Footer */}
       <footer className="mt-2 text-center">
         <p className="text-[11px] text-gray-900 font-bold tracking-wider">
-          {settings?.footer?.text || 'PINTAR JP © 2026. All Right Reserved'}
+          {typeof settings?.footer === 'object' && settings.footer?.text
+            ? settings.footer.text
+            : (typeof settings?.footer === 'string'
+              ? settings.footer
+              : 'PINTAR JP © 2026. All Right Reserved')}
         </p>
       </footer>
     </div>

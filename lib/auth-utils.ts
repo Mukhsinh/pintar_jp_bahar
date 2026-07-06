@@ -1,9 +1,7 @@
 import { User } from '@supabase/supabase-js'
 
 export const SUPERADMIN_EMAILS = [
-    'admin@goetengrs.com',
-    'demo@pintarjp.com',
-    'mukhsinh@gmail.com'
+    'admin@sungaibahar.com'
 ]
 
 export function isSuperAdmin(user: User | null): boolean {

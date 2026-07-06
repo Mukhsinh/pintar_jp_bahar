@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     const authRole = user.app_metadata?.role || user.user_metadata?.role
-    const isSuperAdmin = authRole === 'superadmin' || user.email === 'admin@goetengrs.com'
+    const isSuperAdmin = authRole === 'superadmin' || user.email === 'admin@sungaibahar.com'
 
     if (!employee) {
       if (isSuperAdmin) {

@@ -13,7 +13,7 @@ export async function getUnitsForKPI() {
         const isSuperAdmin =
             user.app_metadata?.role === 'superadmin' ||
             user.user_metadata?.role === 'superadmin' ||
-            user.email === 'admin@goetengrs.com'
+            user.email === 'admin@sungaibahar.com'
 
         const fetchClient = isSuperAdmin ? await createAdminClient() : supabase
 
@@ -49,7 +49,7 @@ export async function getKPIStructure(unitId: string) {
         const isSuperAdmin =
             user.app_metadata?.role === 'superadmin' ||
             user.user_metadata?.role === 'superadmin' ||
-            user.email === 'admin@goetengrs.com'
+            user.email === 'admin@sungaibahar.com'
 
         const fetchClient = isSuperAdmin ? await createAdminClient() : supabase
 

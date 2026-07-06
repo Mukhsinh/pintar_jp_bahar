@@ -147,7 +147,7 @@ export async function updatePegawai(id: string, data: UpdatePegawaiData): Promis
     // Verify user is superadmin
     const { data: { user } } = await supabase.auth.getUser()
     const authRole = user?.app_metadata?.role || user?.user_metadata?.role
-    const isSuperAdmin = authRole === 'superadmin' || user?.email === 'admin@goetengrs.com'
+    const isSuperAdmin = authRole === 'superadmin' || user?.email === 'admin@sungaibahar.com'
     const isUnitManager = authRole === 'unit_manager'
 
     if (!user || (!isSuperAdmin && !isUnitManager)) {
@@ -210,7 +210,7 @@ export async function deletePegawai(id: string): Promise<{ success: boolean; err
     // Verify user is superadmin
     const { data: { user } } = await supabase.auth.getUser()
     const authRole = user?.app_metadata?.role || user?.user_metadata?.role
-    const isSuperAdmin = authRole === 'superadmin' || user?.email === 'admin@goetengrs.com'
+    const isSuperAdmin = authRole === 'superadmin' || user?.email === 'admin@sungaibahar.com'
     const isUnitManager = authRole === 'unit_manager'
 
     if (!user || (!isSuperAdmin && !isUnitManager)) {
@@ -261,7 +261,7 @@ export async function getUnitsForDropdown(): Promise<{ data: Array<{ id: string;
     const isSuperAdmin =
       appRole === 'superadmin' ||
       userRole === 'superadmin' ||
-      email === 'admin@goetengrs.com'
+      email === 'admin@sungaibahar.com'
 
     // Use admin client for superadmin to bypass RLS
     const fetchClient = isSuperAdmin ? await createAdminClient() : supabase

@@ -36,7 +36,7 @@ async function testRequirement1_Authentication() {
 
   // 1.3 - Loading state
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'mukhsin9@gmail.com',
+    email: 'admin@sungaibahar.com',
     password: 'admin123',
   })
   addResult('1.3 Loading state', true, 'Login page implements loading state')
@@ -48,7 +48,7 @@ async function testRequirement1_Authentication() {
       .select('role')
       .eq('email', data.user.email)
       .single()
-    
+
     const hasRole = !!userData?.role
     addResult('1.4 Success redirect', hasRole, hasRole ? 'Role-based redirect implemented' : 'No role found')
   }
@@ -78,7 +78,7 @@ async function testRequirement2_SupabaseIntegration() {
 
   // 2.1 - signInWithPassword
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'mukhsin9@gmail.com',
+    email: 'admin@sungaibahar.com',
     password: 'admin123',
   })
   addResult('2.1 signInWithPassword', !error, error ? error.message : 'Authentication successful')
@@ -105,7 +105,7 @@ async function testRequirement3_SessionPersistence() {
 
   // Login
   await supabase.auth.signInWithPassword({
-    email: 'mukhsin9@gmail.com',
+    email: 'admin@sungaibahar.com',
     password: 'admin123',
   })
 
@@ -151,14 +151,14 @@ async function testRequirement5_RoleBasedRouting() {
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   await supabase.auth.signInWithPassword({
-    email: 'mukhsin9@gmail.com',
+    email: 'admin@sungaibahar.com',
     password: 'admin123',
   })
 
   const { data: userData } = await supabase
     .from('m_employees')
     .select('role')
-    .eq('email', 'mukhsin9@gmail.com')
+    .eq('email', 'admin@sungaibahar.com')
     .single()
 
   // 5.1 - Superadmin routing
@@ -221,7 +221,7 @@ async function testRequirement7_Logout() {
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   await supabase.auth.signInWithPassword({
-    email: 'mukhsin9@gmail.com',
+    email: 'admin@sungaibahar.com',
     password: 'admin123',
   })
 
@@ -247,7 +247,7 @@ async function testRequirement8_Performance() {
   const start = Date.now()
   const supabase = createClient(supabaseUrl, supabaseKey)
   await supabase.auth.signInWithPassword({
-    email: 'mukhsin9@gmail.com',
+    email: 'admin@sungaibahar.com',
     password: 'admin123',
   })
   const duration = Date.now() - start
@@ -285,7 +285,7 @@ async function testRequirement10_UserValidation() {
 
   // 10.1 - Session validation
   await supabase.auth.signInWithPassword({
-    email: 'mukhsin9@gmail.com',
+    email: 'admin@sungaibahar.com',
     password: 'admin123',
   })
   const { data: { session } } = await supabase.auth.getSession()
@@ -295,7 +295,7 @@ async function testRequirement10_UserValidation() {
   const { data: userData, error } = await supabase
     .from('m_employees')
     .select('*')
-    .eq('email', 'mukhsin9@gmail.com')
+    .eq('email', 'admin@sungaibahar.com')
     .single()
   addResult('10.2 User data fetching', !error && !!userData, userData ? 'User data fetched' : 'User not found')
 
