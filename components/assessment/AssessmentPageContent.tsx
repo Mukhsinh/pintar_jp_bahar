@@ -51,32 +51,27 @@ export default function AssessmentPageContent({
   })
   const [copyingUnit, setCopyingUnit] = useState(false)
 
-  // Load available periods from API
-  const loadPeriods = async () => {
+  // Load periods and units sequentially to avoid rate limits
+  const loadInitialData = async () => {
     try {
-      const response = await fetch('/api/assessment/reports?action=periods')
-      const data = await response.json()
-      if (data.success && data.periods) {
-        setAvailablePeriods(data.periods)
-        if (!selectedPeriod && data.periods.length > 0) {
-          setSelectedPeriod(data.periods[0])
+      // Load periods first
+      const periodsRes = await fetch('/api/assessment/reports?action=periods')
+      const periodsData = await periodsRes.json()
+      if (periodsData.success && periodsData.periods) {
+        setAvailablePeriods(periodsData.periods)
+        if (!selectedPeriod && periodsData.periods.length > 0) {
+          setSelectedPeriod(periodsData.periods[0])
         }
       }
-    } catch (error) {
-      console.error('Error loading periods:', error)
-    }
-  }
 
-  // Load available units from API
-  const loadUnits = async () => {
-    try {
-      const response = await fetch('/api/assessment/reports?action=units')
-      const data = await response.json()
-      if (data.success && data.units) {
-        setAvailableUnits(data.units)
+      // Then load units (sequential to avoid auth rate limit)
+      const unitsRes = await fetch('/api/assessment/reports?action=units')
+      const unitsData = await unitsRes.json()
+      if (unitsData.success && unitsData.units) {
+        setAvailableUnits(unitsData.units)
       }
     } catch (error) {
-      console.error('Error loading units:', error)
+      console.error('Error loading initial data:', error)
     }
   }
 
@@ -166,15 +161,18 @@ export default function AssessmentPageContent({
 
   // Load all initial data
   useEffect(() => {
-    loadUnits()
-    loadPeriods()
+    loadInitialData()
   }, [])
 
-  // Load data when period or unit filter changes
+  // Load data when period or unit filter changes - stagger calls to avoid auth rate limit
   useEffect(() => {
     if (selectedPeriod && selectedPeriod !== 'null' && selectedPeriod !== 'undefined') {
-      loadEmployees()
-      loadSummary()
+      const loadData = async () => {
+        await loadEmployees()
+        // Small delay to avoid concurrent auth.getUser() calls hitting rate limit
+        await loadSummary()
+      }
+      loadData()
     } else {
       setLoading(false)
     }

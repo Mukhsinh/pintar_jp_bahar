@@ -6,10 +6,8 @@ import AssessmentPageContent from '@/components/assessment/AssessmentPageContent
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-async function getAvailablePeriods(): Promise<string[]> {
+async function getAvailablePeriods(supabase: any): Promise<string[]> {
   try {
-    const supabase = await createClient()
-
     // 1. Fetch periods from t_pool
     const { data: poolData } = await supabase
       .from('t_pool')
@@ -17,7 +15,7 @@ async function getAvailablePeriods(): Promise<string[]> {
       .order('period', { ascending: false })
 
     const periodsSet = new Set<string>()
-    poolData?.forEach(item => {
+    poolData?.forEach((item: any) => {
       if (item.period) periodsSet.add(item.period)
     })
 
@@ -27,7 +25,7 @@ async function getAvailablePeriods(): Promise<string[]> {
       .select('period')
       .limit(200)
 
-    assData?.forEach(item => {
+    assData?.forEach((item: any) => {
       if (item.period) periodsSet.add(item.period)
     })
 
@@ -46,16 +44,14 @@ export default async function AssessmentPage() {
   try {
     const supabase = await createClient()
 
-    // Optimize data fetching using Promise.all
-    const [authResponse, availablePeriods] = await Promise.all([
-      supabase.auth.getUser(),
-      getAvailablePeriods()
-    ])
-
-    const { data: { user }, error: authError } = authResponse
+    // Get user first, then fetch periods using the same client (avoids extra auth.getUser)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       redirect('/login')
     }
+
+    const availablePeriods = await getAvailablePeriods(supabase)
+
 
     // Get current user's employee record with error handling
     let { data: currentEmployee, error: employeeError } = await supabase
