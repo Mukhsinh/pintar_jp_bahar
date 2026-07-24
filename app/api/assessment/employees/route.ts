@@ -11,6 +11,7 @@ interface AssessmentStatus {
   assessed_indicators: number
   status: string
   completion_percentage: number
+  role?: string
 }
 
 export async function GET(request: NextRequest) {
@@ -38,9 +39,6 @@ export async function GET(request: NextRequest) {
     if (byUserId) {
       currentEmployee = byUserId
     } else {
-      // NOTE: Fallback by email is disabled because m_employees lacks an email column
-      // If we ever add an email column to m_employees, we can re-enable this with case-insensitive matching
-
       const appRole = user.app_metadata?.role
       const userRole = user.user_metadata?.role
       const email = user.email
@@ -63,8 +61,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('API Assessment: Identified user as:', currentEmployee.full_name, 'with role:', currentEmployee.role)
-
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period')
     const status = searchParams.get('status')
@@ -74,34 +70,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Period is required' }, { status: 400 })
     }
 
-    // Get data directly from v_assessment_status view
+    // STUCT UNIT ISOLATION & FILTERING
+    const userRole = currentEmployee.role
+    const userUnitId = currentEmployee.unit_id
+
+    // 1. First attempt: Get data from v_assessment_status view
     let statusQuery = adminClient
       .from('v_assessment_status')
       .select('*')
       .eq('period', period)
 
-    // STUCT UNIT ISOLATION & FILTERING
-    const userRole = currentEmployee.role
-    const userUnitId = currentEmployee.unit_id
-
     if (userRole === 'unit_manager') {
-      // Unit managers are STRICTLY limited to their own unit
       if (!userUnitId) {
         return NextResponse.json({ error: 'Unit ID not found for manager profile' }, { status: 403 })
       }
       statusQuery = statusQuery.eq('unit_id', userUnitId)
     } else if (userRole === 'superadmin') {
-      // Superadmins can see all or filter by requested unit
       if (requestedUnitId && requestedUnitId !== 'all') {
         statusQuery = statusQuery.eq('unit_id', requestedUnitId)
       }
     } else {
-      // Employees or other roles should also be limited to their own unit if they somehow access this
-      // Or we can just reject if not superadmin/manager
       if (userUnitId && userUnitId !== '0') {
         statusQuery = statusQuery.eq('unit_id', userUnitId)
       } else if (userRole !== 'superadmin') {
-        // Fallback safety: if role is unknown and unit is unknown, limit to nothing or error
         return NextResponse.json({ error: 'Unauthorized access level' }, { status: 403 })
       }
     }
@@ -114,20 +105,118 @@ export async function GET(request: NextRequest) {
 
     if (statusError) {
       console.error('View fetch error:', statusError)
-      return NextResponse.json({ error: statusError.message }, { status: 500 })
     }
 
-    // Secondary filter: Ensure superadmins are not in the list for anyone (view already does this but double check)
-    // and that the unit isolation held (double check)
-    const filteredResults = (rawEmployees || []).filter((emp: any) => {
-      // Hide superadmins
-      if (emp.role === 'superadmin') return false
+    let employeesData: AssessmentStatus[] = (rawEmployees || []) as AssessmentStatus[]
 
-      // Double check unit isolation for unit managers
+    // 2. Fallback: If view returns no rows (e.g. period not yet in t_pool), query m_employees directly!
+    if (employeesData.length === 0) {
+      // Get SUPERADMIN unit ID to exclude
+      const { data: adminUnit } = await adminClient
+        .from('m_units')
+        .select('id')
+        .or('code.ilike.ADMIN,name.ilike.SUPERADMIN')
+        .maybeSingle()
+      const adminUnitId = adminUnit?.id
+
+      let empQuery = adminClient
+        .from('m_employees')
+        .select(`
+          id,
+          full_name,
+          unit_id,
+          role,
+          m_units!inner (
+            name
+          )
+        `)
+        .eq('is_active', true)
+        .neq('role', 'superadmin')
+
+      // Exclude SUPERADMIN unit
+      if (adminUnitId) {
+        empQuery = empQuery.neq('unit_id', adminUnitId)
+      }
+
+      if (userRole === 'unit_manager' && userUnitId) {
+        empQuery = empQuery.eq('unit_id', userUnitId)
+      } else if (userRole === 'superadmin' && requestedUnitId && requestedUnitId !== 'all') {
+        empQuery = empQuery.eq('unit_id', requestedUnitId)
+      }
+
+      const { data: directEmps, error: directErr } = await empQuery.order('full_name')
+
+      if (!directErr && directEmps) {
+        // Get indicator counts per unit
+        const { data: indicators } = await adminClient
+          .from('m_kpi_indicators')
+          .select('id, m_kpi_categories!inner(unit_id)')
+          .eq('is_active', true)
+
+        const indicatorCountMap: Record<string, number> = {}
+        indicators?.forEach((ind: any) => {
+          const uId = ind.m_kpi_categories?.unit_id
+          if (uId) indicatorCountMap[uId] = (indicatorCountMap[uId] || 0) + 1
+        })
+
+        // Get existing assessments for this period
+        const { data: existingAssessments } = await adminClient
+          .from('t_kpi_assessments')
+          .select('employee_id, indicator_id')
+          .eq('period', period)
+
+        const assessedCountMap: Record<string, Set<string>> = {}
+        existingAssessments?.forEach((ass: any) => {
+          if (!assessedCountMap[ass.employee_id]) {
+            assessedCountMap[ass.employee_id] = new Set()
+          }
+          assessedCountMap[ass.employee_id].add(ass.indicator_id)
+        })
+
+        employeesData = directEmps.map((emp: any) => {
+          const totalInd = indicatorCountMap[emp.unit_id] || 0
+          const assessedInd = assessedCountMap[emp.id]?.size || 0
+          let empStatus = 'Belum Dinilai'
+          if (assessedInd > 0) {
+            empStatus = (totalInd > 0 && assessedInd >= totalInd) ? 'Selesai' : 'Sebagian'
+          }
+          const completionPct = totalInd > 0 ? Math.round((assessedInd / totalInd) * 100) : 0
+
+          return {
+            employee_id: emp.id,
+            full_name: emp.full_name,
+            unit_id: emp.unit_id,
+            unit_name: (emp.m_units as any)?.name || '-',
+            period: period,
+            total_indicators: totalInd,
+            assessed_indicators: assessedInd,
+            status: empStatus,
+            completion_percentage: completionPct,
+            role: emp.role
+          }
+        })
+
+        if (status && ['Belum Dinilai', 'Sebagian', 'Selesai'].includes(status)) {
+          employeesData = employeesData.filter(e => e.status === status)
+        }
+      }
+    }
+
+    // Secondary filter: Exclude superadmins AND employees from SUPERADMIN unit
+    const { data: adminUnitInfo } = await adminClient
+      .from('m_units')
+      .select('id, name')
+      .or('code.ilike.ADMIN,name.ilike.SUPERADMIN')
+      .maybeSingle()
+
+    const filteredResults = employeesData.filter((emp: any) => {
+      if (emp.role === 'superadmin') return false
+      // Exclude SUPERADMIN unit by id or name
+      if (adminUnitInfo && emp.unit_id === adminUnitInfo.id) return false
+      if (emp.unit_name?.toUpperCase() === 'SUPERADMIN') return false
       if (userRole === 'unit_manager' && emp.unit_id !== userUnitId) {
         return false
       }
-
       return true
     })
 

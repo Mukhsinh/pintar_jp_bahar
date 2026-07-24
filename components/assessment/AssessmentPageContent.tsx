@@ -74,14 +74,6 @@ export default function AssessmentPageContent({
       const data = await response.json()
       if (data.success && data.units) {
         setAvailableUnits(data.units)
-
-        // If superadmin but has a unit_id, default to their unit if filter is currently 'all'
-        if (currentEmployee.role === 'superadmin' &&
-          currentEmployee.unit_id &&
-          currentEmployee.unit_id !== '0' &&
-          unitFilter === 'all') {
-          setUnitFilter(currentEmployee.unit_id)
-        }
       }
     } catch (error) {
       console.error('Error loading units:', error)
@@ -175,6 +167,7 @@ export default function AssessmentPageContent({
   // Load all initial data
   useEffect(() => {
     loadUnits()
+    loadPeriods()
   }, [])
 
   // Load data when period or unit filter changes
@@ -182,6 +175,8 @@ export default function AssessmentPageContent({
     if (selectedPeriod && selectedPeriod !== 'null' && selectedPeriod !== 'undefined') {
       loadEmployees()
       loadSummary()
+    } else {
+      setLoading(false)
     }
   }, [selectedPeriod, unitFilter])
 

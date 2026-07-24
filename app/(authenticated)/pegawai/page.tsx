@@ -206,24 +206,38 @@ export default function PegawaiPage() {
     const formData = new FormData()
     formData.append('file', file)
 
+    let progressStep = 0
+    const statusMessages = [
+      'Mengunggah file...',
+      'Memvalidasi struktur data...',
+      'Memeriksa unit kerja...',
+      'Menyinkronkan database...',
+      'Memproses batch upsert...',
+      'Menyelesaikan import...'
+    ]
+
     const progressInterval = setInterval(() => {
       setImportProgress(prev => {
         if (prev >= 95) return 95
-        return prev + 5
+        return prev + 3
       })
-      setImportStatus(prev => {
-        if (importProgress > 20 && importProgress < 50) return 'Memvalidasi data...'
-        if (importProgress >= 50 && importProgress < 80) return 'Menyinkronkan database...'
-        return 'Memproses rows...'
-      })
-    }, 1000)
+      progressStep++
+      const msgIdx = Math.min(Math.floor(progressStep / 3), statusMessages.length - 1)
+      setImportStatus(statusMessages[msgIdx])
+    }, 1500)
+
+    // Use AbortController with 5-minute timeout to prevent browser timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000)
 
     try {
       const response = await fetch('/api/pegawai/import', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       })
 
+      clearTimeout(timeoutId)
       clearInterval(progressInterval)
       setImportProgress(100)
       setImportStatus('Selesai!')
@@ -239,13 +253,18 @@ export default function PegawaiPage() {
           toast.success(`Berhasil mengimport ${result.success} data pegawai.`)
         }
         loadPegawai()
-        loadStats() // Refresh stats after import
+        loadStats()
       } else {
         toast.error(result.error || 'Terjadi kesalahan saat import')
       }
     } catch (err: any) {
+      clearTimeout(timeoutId)
       clearInterval(progressInterval)
-      toast.error('Koneksi gagal saat mencoba import')
+      if (err.name === 'AbortError') {
+        toast.error('Import timeout — file terlalu besar atau server terlalu lambat. Coba lagi.')
+      } else {
+        toast.error('Koneksi gagal saat mencoba import. Periksa koneksi internet.')
+      }
     } finally {
       setTimeout(() => {
         setImporting(false)
@@ -271,7 +290,7 @@ export default function PegawaiPage() {
   }
 
   const handleDownloadTemplate = () => {
-    window.open('/template_import_pegawai.xlsx', '_blank')
+    window.open('/api/pegawai/template', '_blank')
   }
 
   const handleDownloadReport = (type: 'excel' | 'pdf') => {

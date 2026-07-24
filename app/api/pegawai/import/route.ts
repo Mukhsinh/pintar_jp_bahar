@@ -65,117 +65,51 @@ export async function POST(request: NextRequest) {
     }
 
     // Normalize employment_status to match DB CHECK constraint
-    // Allowed values: 'ASN', 'BLUD', 'PNS', 'PPPK', 'PPPK PARUH WAKTU', 'NON ASN', 'HONORER', 'THL', 'TENAGA KONTRAK'
     const normalizeEmploymentStatus = (raw: any): string => {
       if (raw === undefined || raw === null || raw.toString().trim() === '') return 'BLUD'
       const val = raw.toString().trim().toUpperCase()
 
-      // Exact match first
       const validStatuses = ['ASN', 'BLUD', 'PNS', 'PPPK', 'PPPK PARUH WAKTU', 'NON ASN', 'HONORER', 'THL', 'TENAGA KONTRAK']
       if (validStatuses.includes(val)) return val
 
-      // Fuzzy matching for common variations
       const mapping: Record<string, string> = {
-        // PNS variations
-        'PEGAWAI NEGERI SIPIL': 'PNS',
-        'PEGAWAI NEGERI': 'PNS',
-        'P.N.S': 'PNS',
-        'P.N.S.': 'PNS',
-        // ASN variations
-        'APARATUR SIPIL NEGARA': 'ASN',
-        'A.S.N': 'ASN',
-        'A.S.N.': 'ASN',
-        // PPPK variations
-        'P3K': 'PPPK',
-        'PPPK PARUH': 'PPPK PARUH WAKTU',
-        'PPPK PW': 'PPPK PARUH WAKTU',
-        'P3K PARUH WAKTU': 'PPPK PARUH WAKTU',
-        'PEGAWAI PEMERINTAH': 'PPPK',
+        'PEGAWAI NEGERI SIPIL': 'PNS', 'PEGAWAI NEGERI': 'PNS', 'P.N.S': 'PNS', 'P.N.S.': 'PNS',
+        'APARATUR SIPIL NEGARA': 'ASN', 'A.S.N': 'ASN', 'A.S.N.': 'ASN',
+        'P3K': 'PPPK', 'PPPK PARUH': 'PPPK PARUH WAKTU', 'PPPK PW': 'PPPK PARUH WAKTU',
+        'P3K PARUH WAKTU': 'PPPK PARUH WAKTU', 'PEGAWAI PEMERINTAH': 'PPPK',
         'PEGAWAI PEMERINTAH DENGAN PERJANJIAN KERJA': 'PPPK',
-        // BLUD variations
-        'B.L.U.D': 'BLUD',
-        'B.L.U.D.': 'BLUD',
-        'BADAN LAYANAN UMUM DAERAH': 'BLUD',
-        'BADAN LAYANAN UMUM': 'BLUD',
-        'BLU': 'BLUD',
-        // NON ASN variations
-        'NON-ASN': 'NON ASN',
-        'NON_ASN': 'NON ASN',
-        'NONASN': 'NON ASN',
-        'NON PNS': 'NON ASN',
-        'NON-PNS': 'NON ASN',
-        'NON_PNS': 'NON ASN',
-        'NONPNS': 'NON ASN',
-        'NABAN': 'NON ASN',
-        'NON APARATUR': 'NON ASN',
-        // HONORER variations
-        'HONOR': 'HONORER',
-        'HONORER DAERAH': 'HONORER',
-        'TENAGA HONORER': 'HONORER',
-        'PTT': 'HONORER',
-        // THL variations
-        'TENAGA HARIAN LEPAS': 'THL',
-        'HARIAN LEPAS': 'THL',
-        'HARIAN': 'THL',
-        // TENAGA KONTRAK variations
-        'KONTRAK': 'TENAGA KONTRAK',
-        'TK': 'TENAGA KONTRAK',
-        'TENAGA KONTRAK DAERAH': 'TENAGA KONTRAK',
-        'TKHL': 'TENAGA KONTRAK',
-        'OUTSOURCING': 'TENAGA KONTRAK',
-        'OS': 'TENAGA KONTRAK',
-        'MAGANG': 'TENAGA KONTRAK',
-        // Common hospital staff abbreviations
-        'AMK': 'BLUD',
-        'AMAK': 'BLUD',
-        'SKM': 'BLUD',
-        'S.KEP': 'BLUD',
-        'NS': 'BLUD',
-        'DR': 'BLUD',
-        'DRG': 'BLUD',
-        'APT': 'BLUD',
+        'B.L.U.D': 'BLUD', 'B.L.U.D.': 'BLUD', 'BADAN LAYANAN UMUM DAERAH': 'BLUD',
+        'BADAN LAYANAN UMUM': 'BLUD', 'BLU': 'BLUD',
+        'NON-ASN': 'NON ASN', 'NON_ASN': 'NON ASN', 'NONASN': 'NON ASN',
+        'NON PNS': 'NON ASN', 'NON-PNS': 'NON ASN', 'NON_PNS': 'NON ASN',
+        'NONPNS': 'NON ASN', 'NABAN': 'NON ASN', 'NON APARATUR': 'NON ASN',
+        'HONOR': 'HONORER', 'HONORER DAERAH': 'HONORER', 'TENAGA HONORER': 'HONORER', 'PTT': 'HONORER',
+        'TENAGA HARIAN LEPAS': 'THL', 'HARIAN LEPAS': 'THL', 'HARIAN': 'THL',
+        'KONTRAK': 'TENAGA KONTRAK', 'TK': 'TENAGA KONTRAK', 'TENAGA KONTRAK DAERAH': 'TENAGA KONTRAK',
+        'TKHL': 'TENAGA KONTRAK', 'OUTSOURCING': 'TENAGA KONTRAK', 'OS': 'TENAGA KONTRAK', 'MAGANG': 'TENAGA KONTRAK',
+        'AMK': 'BLUD', 'AMAK': 'BLUD', 'SKM': 'BLUD', 'S.KEP': 'BLUD',
+        'NS': 'BLUD', 'DR': 'BLUD', 'DRG': 'BLUD', 'APT': 'BLUD',
       }
 
-      // Check exact mapping
       if (mapping[val]) return mapping[val]
-
-      // Check if the value contains a valid status keyword
-      for (const status of validStatuses) {
-        if (val.includes(status)) return status
-      }
-
-      // Check partial mapping match
-      for (const [key, mapped] of Object.entries(mapping)) {
-        if (val.includes(key)) return mapped
-      }
-
-      // Default fallback - BLUD for unrecognized values
+      for (const status of validStatuses) { if (val.includes(status)) return status }
+      for (const [key, mapped] of Object.entries(mapping)) { if (val.includes(key)) return mapped }
       return 'BLUD'
     }
 
     const normalizeTaxStatus = (status: any): string => {
       if (!status) return 'TK/0'
       let val = String(status).toUpperCase().replace(/\s+/g, '')
-
-      // Remove common separators and re-add standard one
       val = val.replace(/[\/\-_]/g, '')
-
       let normalized = val
-      if (val.startsWith('TK')) {
-        normalized = 'TK/' + val.slice(2)
-      } else if (val.startsWith('K')) {
-        normalized = 'K/' + val.slice(1)
-      }
-
+      if (val.startsWith('TK')) { normalized = 'TK/' + val.slice(2) }
+      else if (val.startsWith('K')) { normalized = 'K/' + val.slice(1) }
       const validTaxStatuses = ['TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3']
       if (validTaxStatuses.includes(normalized)) return normalized
-
-      // Final attempt: check if it contains any valid status
       for (const valid of validTaxStatuses) {
         if (normalized.includes(valid.replace('/', ''))) return valid
       }
-
-      return 'TK/0' // Fallback
+      return 'TK/0'
     }
 
     const results = {
@@ -185,9 +119,9 @@ export async function POST(request: NextRequest) {
       total: rawData.length,
     }
 
-    // --- PRE-FETCH: Load units and auth users ---
+    // --- PRE-FETCH: Load units and existing employees ---
     const { data: allUnits } = await supabaseAdmin.from('m_units').select('id, code, name')
-    const { data: { users: allAuthUsers } } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+    const { data: allEmployees } = await supabaseAdmin.from('m_employees').select('id, employee_code, email, user_id')
 
     // Build lookup maps
     const unitByCode = new Map<string, any>()
@@ -197,14 +131,18 @@ export async function POST(request: NextRequest) {
       unitByName.set(u.name.toLowerCase(), u)
     })
 
-    const authUserByEmail = new Map<string, any>()
-    allAuthUsers?.forEach(u => {
-      if (u.email) authUserByEmail.set(u.email.toLowerCase(), u)
+    const employeeByCode = new Map<string, any>()
+    allEmployees?.forEach(emp => {
+      if (emp.employee_code) employeeByCode.set(emp.employee_code.toLowerCase(), emp)
     })
 
     const codesInFile = new Set<string>()
 
-    // 3. Process records
+    // ========================================================
+    // PHASE 1: Validate ALL rows first, build upsert batch
+    // ========================================================
+    const validRecords: any[] = []
+
     for (let i = 0; i < rawData.length; i++) {
       const row = rawData[i]
       const rowNum = i + 2
@@ -214,7 +152,8 @@ export async function POST(request: NextRequest) {
       const employeeCode = getVal(row, ['Kode Pegawai', 'Kode', 'NIP'])?.toString().trim()
       const fullName = getVal(row, ['Nama Lengkap', 'Nama'])?.toString().trim()
       const unitCode = getVal(row, ['Kode Unit', 'Unit'])?.toString().trim()
-      const email = getVal(row, ['Email'])?.toString().trim().toLowerCase()
+      let email = getVal(row, ['Email', 'Email (Opsional)', 'Email(Opsional)'])?.toString().trim().toLowerCase()
+      if (email === '') email = undefined
 
       try {
         if (!employeeCode || !fullName || !unitCode) {
@@ -222,11 +161,16 @@ export async function POST(request: NextRequest) {
         }
 
         if (codesInFile.has(employeeCode)) {
-          throw new Error(`Kode duplikat: ${employeeCode}`)
+          throw new Error(`Kode duplikat dalam file: ${employeeCode}`)
         }
         codesInFile.add(employeeCode)
 
-        // Enums & Norms
+        // Validate email format if provided
+        if (email && !email.includes('@')) {
+          throw new Error(`Email tidak valid: ${email}`)
+        }
+
+        // Role normalization
         const roleStr = getVal(row, ['Role'])?.toString().trim().toLowerCase()
         const normalizedRole = ['superadmin', 'unit_manager', 'employee'].includes(roleStr) ? roleStr : 'employee'
 
@@ -237,40 +181,20 @@ export async function POST(request: NextRequest) {
 
         if (!unit) throw new Error(`Unit "${unitCode}" tidak ditemukan`)
 
-        // Auth Sync
-        let authUserId: string | null = null
-        if (email) {
-          if (!email.includes('@')) throw new Error(`Email tidak valid: ${email}`)
+        // Retrieve existing employee to preserve email/user_id
+        const existingEmp = employeeByCode.get(employeeCode.toLowerCase())
 
-          const existingAuthUser = authUserByEmail.get(email)
-          if (existingAuthUser) {
-            authUserId = existingAuthUser.id
-            // ONLY update if metadata changed to save time/rate-limits
-            const meta = existingAuthUser.user_metadata || {}
-            if (meta.role !== normalizedRole || meta.full_name !== fullName) {
-              await supabaseAdmin.auth.admin.updateUserById(existingAuthUser.id, {
-                user_metadata: { ...meta, role: normalizedRole, full_name: fullName }
-              })
-            }
-          } else {
-            const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-              email,
-              password: `JASPEL_${employeeCode}`,
-              email_confirm: true,
-              user_metadata: { role: normalizedRole, full_name: fullName }
-            })
-            if (createError) throw createError
-            authUserId = newUser.user?.id || null
-          }
-        }
+        // Generate fallback email to satisfy NOT NULL column constraint
+        const fallbackEmail = `${employeeCode.toLowerCase().replace(/[^a-z0-9]/g, '')}@sungaibahar.local`
+        const finalEmail = email || existingEmp?.email || fallbackEmail
 
-        // Final Employee Data
-        const empData = {
+        // Build employee data object
+        const empData: any = {
           employee_code: trunc(employeeCode, 50),
           full_name: trunc(fullName, 255),
           unit_id: unit.id,
-          user_id: authUserId,
-          email: trunc(email, 255),
+          user_id: existingEmp?.user_id || null,
+          email: trunc(finalEmail, 255),
           role: normalizedRole,
           tax_status: normalizeTaxStatus(getVal(row, ['Status Pajak', 'PTKP'])),
           nik: trunc(getVal(row, ['NIK']), 100),
@@ -286,12 +210,14 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString()
         }
 
-        const { error: upsertErr } = await supabaseAdmin
-          .from('m_employees')
-          .upsert(empData, { onConflict: 'employee_code' })
-
-        if (upsertErr) throw upsertErr
-        results.success++
+        validRecords.push({
+          rowNum,
+          employeeCode,
+          fullName,
+          email,
+          empData,
+          row
+        })
       } catch (err: any) {
         results.failed++
         results.failedRows.push({
@@ -304,8 +230,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ========================================================
+    // PHASE 2: Batch upsert to database (chunks of 50)
+    // ========================================================
+    const BATCH_SIZE = 50
+    for (let i = 0; i < validRecords.length; i += BATCH_SIZE) {
+      const batch = validRecords.slice(i, i + BATCH_SIZE)
+      const batchData = batch.map(r => r.empData)
+
+      const { error: upsertErr, data: upsertedData } = await supabaseAdmin
+        .from('m_employees')
+        .upsert(batchData, { onConflict: 'employee_code' })
+        .select('id, employee_code')
+
+      if (upsertErr) {
+        // If batch fails, try individual inserts to identify problematic rows
+        for (const record of batch) {
+          try {
+            const { error: singleErr } = await supabaseAdmin
+              .from('m_employees')
+              .upsert(record.empData, { onConflict: 'employee_code' })
+
+            if (singleErr) throw singleErr
+            results.success++
+          } catch (err: any) {
+            results.failed++
+            results.failedRows.push({
+              rowNumber: record.rowNum,
+              code: record.employeeCode || '-',
+              name: record.fullName || '-',
+              reason: err.message || 'Database error',
+              data: record.row
+            })
+          }
+        }
+      } else {
+        results.success += batch.length
+      }
+    }
+
     return NextResponse.json(results)
   } catch (error: any) {
+    console.error('[IMPORT] Critical error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

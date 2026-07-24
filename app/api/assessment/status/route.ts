@@ -11,6 +11,7 @@ interface AssessmentStatus {
   assessed_indicators: number
   status: string
   completion_percentage: number
+  role?: string
 }
 
 async function getAssessmentStatus(supabase: any, unitIdFilter: string | null, period: string): Promise<AssessmentStatus[]> {
@@ -24,14 +25,86 @@ async function getAssessmentStatus(supabase: any, unitIdFilter: string | null, p
   }
 
   const { data, error } = await query.order('full_name').range(0, 9999)
-  if (error) throw error
 
-  // Filter out ADMIN unit (standard isolation)
-  return (data || []).filter((emp: any) =>
+  let result: AssessmentStatus[] = (data || []).filter((emp: any) =>
     emp.unit_code !== 'ADMIN' &&
     emp.unit_name !== 'SUPERADMIN' &&
     emp.role !== 'superadmin'
   )
+
+  // Fallback if view returns no rows
+  if (result.length === 0) {
+    let empQuery = supabase
+      .from('m_employees')
+      .select(`
+        id,
+        full_name,
+        unit_id,
+        role,
+        m_units!inner (
+          name
+        )
+      `)
+      .eq('is_active', true)
+      .neq('role', 'superadmin')
+
+    if (unitIdFilter && unitIdFilter !== '0') {
+      empQuery = empQuery.eq('unit_id', unitIdFilter)
+    }
+
+    const { data: directEmps } = await empQuery.order('full_name')
+
+    if (directEmps && directEmps.length > 0) {
+      const { data: indicators } = await supabase
+        .from('m_kpi_indicators')
+        .select('id, m_kpi_categories!inner(unit_id)')
+        .eq('is_active', true)
+
+      const indicatorCountMap: Record<string, number> = {}
+      indicators?.forEach((ind: any) => {
+        const uId = ind.m_kpi_categories?.unit_id
+        if (uId) indicatorCountMap[uId] = (indicatorCountMap[uId] || 0) + 1
+      })
+
+      const { data: existingAssessments } = await supabase
+        .from('t_kpi_assessments')
+        .select('employee_id, indicator_id')
+        .eq('period', period)
+
+      const assessedCountMap: Record<string, Set<string>> = {}
+      existingAssessments?.forEach((ass: any) => {
+        if (!assessedCountMap[ass.employee_id]) {
+          assessedCountMap[ass.employee_id] = new Set()
+        }
+        assessedCountMap[ass.employee_id].add(ass.indicator_id)
+      })
+
+      result = directEmps.map((emp: any) => {
+        const totalInd = indicatorCountMap[emp.unit_id] || 0
+        const assessedInd = assessedCountMap[emp.id]?.size || 0
+        let empStatus = 'Belum Dinilai'
+        if (assessedInd > 0) {
+          empStatus = (totalInd > 0 && assessedInd >= totalInd) ? 'Selesai' : 'Sebagian'
+        }
+        const completionPct = totalInd > 0 ? Math.round((assessedInd / totalInd) * 100) : 0
+
+        return {
+          employee_id: emp.id,
+          full_name: emp.full_name,
+          unit_id: emp.unit_id,
+          unit_name: (emp.m_units as any)?.name || '-',
+          period: period,
+          total_indicators: totalInd,
+          assessed_indicators: assessedInd,
+          status: empStatus,
+          completion_percentage: completionPct,
+          role: emp.role
+        }
+      })
+    }
+  }
+
+  return result
 }
 
 export async function GET(request: NextRequest) {
@@ -76,10 +149,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // STRICT ROLE OVERRIDE: 
-    // If the database says they are a unit_manager, we MUST respect that role
-    // even if Auth metadata says superadmin, for proper unit isolation.
-    // However, if database role is not defined but Auth metadata says superadmin, use that.
     const effectiveRole = currentEmployee.role || (isSuperAdmin ? 'superadmin' : 'employee')
     const effectiveUnitId = currentEmployee.unit_id
 
@@ -122,7 +191,6 @@ export async function GET(request: NextRequest) {
       // Get status matching unit filter
       let unitIdFilter = effectiveRole === 'unit_manager' ? effectiveUnitId : null
 
-      // Allow superadmin to override unit filter via query param
       if (effectiveRole === 'superadmin' && requestedUnitId && requestedUnitId !== 'all') {
         unitIdFilter = requestedUnitId
       }

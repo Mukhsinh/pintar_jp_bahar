@@ -6,26 +6,39 @@ import AssessmentPageContent from '@/components/assessment/AssessmentPageContent
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-// Import function secara langsung untuk menghindari module resolution issue
 async function getAvailablePeriods(): Promise<string[]> {
   try {
     const supabase = await createClient()
 
-    const { data, error } = await supabase
+    // 1. Fetch periods from t_pool
+    const { data: poolData } = await supabase
       .from('t_pool')
       .select('period')
-      .in('status', ['approved', 'distributed'])
       .order('period', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching periods:', error)
-      return []
-    }
+    const periodsSet = new Set<string>()
+    poolData?.forEach(item => {
+      if (item.period) periodsSet.add(item.period)
+    })
 
-    return data?.map(item => item.period) || []
+    // 2. Fetch distinct periods from t_kpi_assessments
+    const { data: assData } = await supabase
+      .from('t_kpi_assessments')
+      .select('period')
+      .limit(200)
+
+    assData?.forEach(item => {
+      if (item.period) periodsSet.add(item.period)
+    })
+
+    // 3. Fallback: Always include current period (YYYY-MM)
+    const currentMonth = new Date().toISOString().slice(0, 7)
+    periodsSet.add(currentMonth)
+
+    return Array.from(periodsSet).sort((a, b) => b.localeCompare(a))
   } catch (error) {
     console.error('Exception in getAvailablePeriods:', error)
-    return []
+    return [new Date().toISOString().slice(0, 7)]
   }
 }
 

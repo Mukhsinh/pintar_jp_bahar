@@ -59,7 +59,11 @@ async function getAvailablePeriods(supabase: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
 
-  const periods = data?.map((item: any) => item.period) || []
+  let periods = data?.map((item: any) => item.period) || []
+  if (periods.length === 0) {
+    const currentMonth = new Date().toISOString().slice(0, 7)
+    periods = [currentMonth]
+  }
   return NextResponse.json({ success: true, periods })
 }
 
@@ -69,7 +73,7 @@ async function getAvailableUnits(supabase: any, user: any) {
 
   let query = supabase
     .from('m_units')
-    .select('id, name')
+    .select('id, name, code')
     .eq('is_active', true)
     .order('name')
 
@@ -92,7 +96,12 @@ async function getAvailableUnits(supabase: any, user: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true, units: data || [] })
+  // Exclude SUPERADMIN unit from assessment
+  const filteredUnits = (data || [])
+    .filter((u: any) => u.code?.toUpperCase() !== 'ADMIN' && u.name?.toUpperCase() !== 'SUPERADMIN')
+    .map(({ id, name }: any) => ({ id, name }))
+
+  return NextResponse.json({ success: true, units: filteredUnits })
 }
 
 async function getAssessmentReport(supabase: any, user: any, period: string, unitId?: string | null) {

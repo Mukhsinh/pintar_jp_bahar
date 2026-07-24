@@ -7,10 +7,11 @@ const nextConfig = {
   // Experimental features
   experimental: {
     serverActions: {
-      bodySizeLimit: '5mb',
+      bodySizeLimit: '10mb',
     },
     // Optimize package imports — tree-shake heavy icon libraries
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    serverExternalPackages: ['xlsx'],
   },
 
   // Skip build checks for faster deploys

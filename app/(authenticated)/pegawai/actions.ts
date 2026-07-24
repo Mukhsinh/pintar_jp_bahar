@@ -100,12 +100,15 @@ export async function createPegawai(data: CreatePegawaiData) {
     // Log data for debugging
     console.log('Creating employee with data:', data, 'using taxType:', taxType)
 
+    const fallbackEmail = `${data.employee_code.toLowerCase().replace(/[^a-z0-9]/g, '')}@sungaibahar.local`
+    const finalEmail = data.email?.trim() || fallbackEmail
+
     const { data: newPegawai, error } = await supabase
       .from('m_employees')
       .insert([{
         employee_code: data.employee_code,
         full_name: data.full_name,
-        email: data.email || null,
+        email: finalEmail,
         unit_id: data.unit_id,
         tax_status: data.tax_status || 'TK/0',
         tax_type: taxType as any,
@@ -157,13 +160,17 @@ export async function updatePegawai(id: string, data: UpdatePegawaiData): Promis
     // Use admin client to bypass RLS and ensure all columns are written
     const adminSupabase = await createAdminClient()
 
+    const code = data.employee_code || ''
+    const fallbackEmail = `${code.toLowerCase().replace(/[^a-z0-9]/g, '')}@sungaibahar.local`
+    const finalEmail = data.email?.trim() || fallbackEmail
+
     // If unit manager, ensure they only update employees in their unit
     let updateQuery = adminSupabase
       .from('m_employees')
       .update({
         employee_code: data.employee_code,
         full_name: data.full_name,
-        email: data.email || null,
+        email: finalEmail,
         unit_id: isSuperAdmin ? data.unit_id : user.user_metadata?.unit_id,
         position: data.position || null,
         phone: data.phone || null,

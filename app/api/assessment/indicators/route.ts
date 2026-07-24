@@ -14,6 +14,15 @@ export async function GET(request: NextRequest) {
     // Use admin client to bypass RLS for employee lookup and data queries
     const adminClient = await createAdminClient()
 
+    const appRole = user.app_metadata?.role
+    const userRole = user.user_metadata?.role
+    const email = user.email
+
+    const isSuperAdmin =
+      appRole === 'superadmin' ||
+      userRole === 'superadmin' ||
+      email === 'admin@sungaibahar.com'
+
     // Try by user_id first, then fallback to email
     let currentEmployee: any = null
     const { data: byUserId } = await adminClient
@@ -24,11 +33,11 @@ export async function GET(request: NextRequest) {
 
     if (byUserId) {
       currentEmployee = byUserId
-    } else {
+    } else if (email) {
       const { data: byEmail } = await adminClient
         .from('m_employees')
         .select('id, role, unit_id')
-        .eq('email', user.email)
+        .eq('email', email)
         .maybeSingle()
 
       if (byEmail) {
@@ -41,8 +50,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    if (currentEmployee && isSuperAdmin) {
+      currentEmployee.role = 'superadmin'
+    }
+
     if (!currentEmployee) {
-      return NextResponse.json({ error: 'Employee record not found' }, { status: 404 })
+      if (isSuperAdmin) {
+        currentEmployee = {
+          id: user.id,
+          role: 'superadmin',
+          unit_id: '0'
+        }
+      } else {
+        return NextResponse.json({ error: 'Employee record not found' }, { status: 404 })
+      }
     }
 
     const { searchParams } = new URL(request.url)
@@ -117,7 +138,7 @@ export async function GET(request: NextRequest) {
     // Get indicators for the categories
     const { data: indicators, error: indicatorsError } = await adminClient
       .from('m_kpi_indicators')
-      .select('id, code, name, target_value, weight_percentage, category_id, measurement_unit, description, calculation_method, base_index_value, measurement_type, unit_tariff, service_types')
+      .select('id, code, name, target_value, weight_percentage, category_id, measurement_unit, description, calculation_method, base_index_value')
       .eq('is_active', true)
       .in('category_id', categoryIds)
 
