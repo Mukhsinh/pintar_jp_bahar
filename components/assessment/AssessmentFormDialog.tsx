@@ -131,21 +131,15 @@ export default function AssessmentFormDialog({
     }
   }
 
-  const getSubIndicatorMaxScore = (sub: KPISubIndicator) => {
-    if (sub.scoring_criteria && sub.scoring_criteria.length > 0) {
-      return Math.max(...sub.scoring_criteria.map(c => c.score))
-    }
-    return sub.target_value > 0 ? sub.target_value : (isMedicalUnit ? 0 : 100)
-  }
-
   const getIndicatorTarget = (indicator: KPIIndicator) => {
     if (indicator.sub_indicators && indicator.sub_indicators.length > 0) {
-      return indicator.sub_indicators.reduce((sum, sub) => {
+      const subTargetSum = indicator.sub_indicators.reduce((sum, sub) => {
         const weight = isMedicalUnit ? 1 : (sub.weight_percentage / 100)
-        return sum + (getSubIndicatorMaxScore(sub) * weight)
+        return sum + ((sub.target_value || 0) * weight)
       }, 0)
+      if (subTargetSum > 0) return subTargetSum
     }
-    return indicator.target_value
+    return indicator.target_value || 0
   }
 
   const loadExistingAssessments = async () => {
