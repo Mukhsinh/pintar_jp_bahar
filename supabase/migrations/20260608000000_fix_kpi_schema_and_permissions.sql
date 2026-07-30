@@ -14,15 +14,15 @@ END $$;
 ALTER TABLE m_kpi_indicators 
 ADD COLUMN IF NOT EXISTS calculation_method VARCHAR(20) DEFAULT 'indexing',
 ADD COLUMN IF NOT EXISTS measurement_type VARCHAR(20) DEFAULT 'scoring',
-ADD COLUMN IF NOT EXISTS unit_tariff DECIMAL(15,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS unit_tariff DECIMAL(15,4) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS service_types TEXT[] DEFAULT '{}',
-ADD COLUMN IF NOT EXISTS base_index_value DECIMAL(15,2) DEFAULT 0;
+ADD COLUMN IF NOT EXISTS base_index_value DECIMAL(15,4) DEFAULT 0;
 
 -- 2. Fix m_kpi_sub_indicators Schema
 ALTER TABLE m_kpi_sub_indicators 
 ADD COLUMN IF NOT EXISTS measurement_type VARCHAR(20) DEFAULT 'scoring',
-ADD COLUMN IF NOT EXISTS unit_tariff DECIMAL(15,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS base_index_value DECIMAL(15,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS unit_tariff DECIMAL(15,4) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS base_index_value DECIMAL(15,4) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS service_types TEXT[] DEFAULT '{}';
 
 -- 3. Fix RLS for m_kpi_indicators

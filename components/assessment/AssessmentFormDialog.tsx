@@ -21,6 +21,7 @@ import { toast } from 'sonner'
 import { Progress } from '@/components/ui/progress'
 import type { AssessmentStatus } from '@/lib/types/assessment.types'
 import type { ScoringCriterion } from '@/lib/types/kpi.types'
+import { formatDecimal } from '@/lib/utils/format'
 import { isMedicalUnit as checkMedicalUnit } from '@/lib/utils/medical-unit'
 
 interface KPISubIndicator {
@@ -715,7 +716,7 @@ export default function AssessmentFormDialog({
                             <div>
                               <Label className="text-sm font-medium">Target</Label>
                               <div className="mt-1 p-2 bg-gray-50 rounded border text-sm">
-                                {getIndicatorTarget(indicator).toFixed(2)}
+                                {formatDecimal(getIndicatorTarget(indicator), 4)}
                                 {indicator.measurement_unit && ` ${indicator.measurement_unit}`}
                               </div>
                             </div>
@@ -728,10 +729,10 @@ export default function AssessmentFormDialog({
                                 <Input
                                   id={`realization-${indicator.id}`}
                                   type="number"
-                                  step="0.01"
+                                  step="0.0001"
                                   value={realizationValue || ''}
                                   onChange={(e) => handleRealizationChange(indicator.id, e.target.value, indicator.target_value)}
-                                  placeholder="0.00"
+                                  placeholder="0.0000"
                                   className="mt-1"
                                 />
                               </div>
@@ -782,7 +783,7 @@ export default function AssessmentFormDialog({
                                           <p className="text-xs text-gray-500">
                                             {!isMedicalUnit && `Bobot: ${sub.weight_percentage}%`}
                                             {sub.target_value > 0 && ` • Target: ${sub.target_value}`}
-                                            {isQuantitative && ` • Satuan: ${sub.measurement_unit || 'Volume'} • Tarif Dasar: Rp ${(sub.base_index_value || 0).toLocaleString('id-ID')}`}
+                                            {isQuantitative && ` • Satuan: ${sub.measurement_unit || 'Volume'} • Tarif Dasar / Indeks: ${(sub.base_index_value || 0) >= 1000 ? 'Rp ' + (sub.base_index_value || 0).toLocaleString('id-ID') : formatDecimal(sub.base_index_value || 0, 4)}`}
                                           </p>
                                         </div>
                                         <Badge variant="outline" className="bg-white text-xs">
@@ -796,18 +797,6 @@ export default function AssessmentFormDialog({
                                             <div className="grid gap-2 border rounded-md p-2 bg-white/50">
                                               <Label className="text-[10px] font-bold text-blue-800 uppercase px-1">Daftar Layanan ({sub.tariffs.length})</Label>
                                               {sub.tariffs.map((tariff) => {
-                                                // We need to store volumes per sub_indicator_id AND tariff_id
-                                                // For now, we'll use a specialized structure for realization_value in sub_assessments if needed, 
-                                                // but sub_assessments typically stores one realization_value.
-                                                // Let's assume realization_value here is the TOTAL SUM, but we need to track individual volumes.
-                                                // To keep it simple without changing the DB schema too much yet, 
-                                                // we can store the breakdown in 'notes' or just calculate the total realization here.
-                                                // Actually, the assessment table stores realization_value.
-
-                                                // To track individual volumes in the UI state without DB changes, 
-                                                // we might need a local state or use sub_assessments with a JSON breakdown in visualization.
-                                                // For now, let's just use a local tracking if possible.
-
                                                 return (
                                                   <div key={tariff.id} className="flex items-center gap-2 bg-white p-2 rounded border border-blue-50 shadow-sm">
                                                     <div className="flex-1">
@@ -817,16 +806,11 @@ export default function AssessmentFormDialog({
                                                     <div className="w-24">
                                                       <Input
                                                         type="number"
+                                                        step="0.0001"
                                                         placeholder="Vol"
                                                         className="h-7 text-xs"
                                                         onChange={(e) => {
                                                           const vol = parseFloat(e.target.value) || 0
-                                                          // Calculate total realization for this sub-indicator
-                                                          // We need to know other volumes too to get the correct sum.
-                                                          // This is tricky because subAssessment only stores ONE realization_value.
-
-                                                          // Let's use a temporary approach: 
-                                                          // We'll use a data attribute on the inputs to sum them up on any change.
                                                           const container = e.target.closest('.grid');
                                                           if (container) {
                                                             const inputs = container.querySelectorAll('input');
@@ -841,9 +825,8 @@ export default function AssessmentFormDialog({
                                                             const isActivity = category?.configuration_style === 'activity'
                                                             let calculatedScore = 0
                                                             if (isActivity) {
-                                                              calculatedScore = subIndicatorTotal // Porsi langsung rupiah
+                                                              calculatedScore = subIndicatorTotal
                                                             } else {
-                                                              // For index, it might be different, but let's assume realization * base_index
                                                               calculatedScore = subIndicatorTotal * (sub.base_index_value || 1)
                                                             }
 
@@ -868,9 +851,9 @@ export default function AssessmentFormDialog({
                                                 <Label className="text-[10px] text-gray-500 mb-1 block">Input Volume ({sub.measurement_unit || 'qty'})</Label>
                                                 <Input
                                                   type="number"
-                                                  step="0.01"
+                                                  step="0.0001"
                                                   className="h-8 text-sm bg-white"
-                                                  placeholder="0.00"
+                                                  placeholder="0.0000"
                                                   value={subRealization || ''}
                                                   onChange={(e) => {
                                                     const vol = parseFloat(e.target.value) || 0

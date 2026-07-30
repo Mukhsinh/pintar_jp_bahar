@@ -466,7 +466,7 @@ export default function IndicatorFormDialog({
                 formData.calculation_method === 'priority' ||
                 (indicator && (indicator as any).m_kpi_categories?.configuration_style === 'activity')) && (
                   <div className="space-y-2">
-                    <Label htmlFor="indicator_base_value">Tarif Dasar / Nilai Rupiah *</Label>
+                    <Label htmlFor="indicator_base_value">Tarif Dasar / Nilai Indeks *</Label>
                     <Input
                       id="indicator_base_value"
                       type="number"
@@ -474,13 +474,13 @@ export default function IndicatorFormDialog({
                       min="0"
                       value={formData.indicator_base_value}
                       onChange={(e) => setFormData({ ...formData, indicator_base_value: e.target.value })}
-                      placeholder="contoh: 0.1250"
+                      placeholder="contoh: 0.1250 atau 150000"
                     />
                     {errors.indicator_base_value && (
                       <p className="text-sm text-red-600">{errors.indicator_base_value}</p>
                     )}
                     <p className="text-xs text-gray-500">
-                      Nilai tarif pengali atau nilai rupiah langsung. Digunakan untuk metode Berbasis Aktivitas atau Priority.
+                      Nilai tarif pengali atau nilai indeks/rupiah (mendukung hingga 4 digit desimal di belakang koma). Digunakan untuk metode Berbasis Aktivitas atau Priority.
                     </p>
                   </div>
                 )}
@@ -511,14 +511,15 @@ export default function IndicatorFormDialog({
                         <Input
                           id="base_index_value_sub"
                           type="number"
-                          step="any"
+                          step="0.0001"
                           value={formData.base_index_value}
                           onChange={(e) => setFormData({ ...formData, base_index_value: e.target.value })}
-                          placeholder="contoh: 150000 atau 0.8"
+                          placeholder="contoh: 150000 atau 0.8250"
                         />
                         {errors.base_index_value_sub && (
                           <p className="text-sm text-red-600">{errors.base_index_value_sub}</p>
                         )}
+                        <p className="text-xs text-gray-500">Nilai tarif/indeks ini akan dikalikan dengan volume capaian (mendukung hingga 4 digit desimal).</p>
                       </div>
 
                       <div className="space-y-2">

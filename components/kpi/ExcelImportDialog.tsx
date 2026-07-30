@@ -131,7 +131,7 @@ export default function ExcelImportDialog({
                                 code: row.IndicatorCode,
                                 name: row.IndicatorName,
                                 target_value: row.TargetVolume || 0,
-                                basic_index_value: row.BasicIndexValue || 0,
+                                base_index_value: row.BasicIndexValue || 0,
                                 weight_percentage: 100 / rows.length,
                                 is_active: true,
                             },

@@ -169,6 +169,15 @@ async function generatePDFReport(unit: any, categories: any[], appSettings: any)
       grandTotalIndicators++
       totalWeightInCategory += Number(ind.weight_percentage)
 
+      // Helper for formatting base index / tariff
+      const formatBaseVal = (val: any) => {
+        if (!val || Number(val) === 0) return '-'
+        const n = Number(val)
+        return n >= 1000
+          ? new Intl.NumberFormat('id-ID').format(n)
+          : new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 4 }).format(n)
+      }
+
       // Main Indicator Row
       tableBody.push([
         { content: ind.code, styles: { fontStyle: 'bold' } },
@@ -176,7 +185,7 @@ async function generatePDFReport(unit: any, categories: any[], appSettings: any)
         { content: `${ind.weight_percentage}%`, styles: { fontStyle: 'bold' } },
         { content: ind.target_value || 0, styles: { fontStyle: 'bold' } },
         { content: ind.measurement_unit || '-', styles: { fontStyle: 'bold' } },
-        { content: ind.base_index_value && ind.base_index_value > 0 ? (ind.base_index_value > 1 ? new Intl.NumberFormat('id-ID').format(ind.base_index_value) : ind.base_index_value.toString()) : '-', styles: { fontStyle: 'bold' } }
+        { content: formatBaseVal(ind.base_index_value), styles: { fontStyle: 'bold' } }
       ])
 
       // Sub Indicators Rows
@@ -189,7 +198,7 @@ async function generatePDFReport(unit: any, categories: any[], appSettings: any)
           `${sub.weight_percentage}%`,
           sub.target_value || 0,
           sub.measurement_unit || '-',
-          sub.base_index_value && sub.base_index_value > 0 ? (sub.base_index_value > 1 ? new Intl.NumberFormat('id-ID').format(sub.base_index_value) : sub.base_index_value.toString()) : '-'
+          formatBaseVal(sub.base_index_value)
         ])
       })
     })

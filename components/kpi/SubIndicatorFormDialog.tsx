@@ -334,10 +334,10 @@ export default function SubIndicatorFormDialog({
                                     <Input
                                         id="sub_target"
                                         type="number"
-                                        step="0.01"
+                                        step="0.0001"
                                         value={formData.target_value}
                                         onChange={(e) => setFormData({ ...formData, target_value: e.target.value })}
-                                        placeholder="0.00"
+                                        placeholder="0.0000"
                                         className={errors.target_value ? 'border-red-500' : ''}
                                     />
                                     {errors.target_value && <p className="text-xs text-red-500">{errors.target_value}</p>}
@@ -386,14 +386,14 @@ export default function SubIndicatorFormDialog({
                                             <Input
                                                 id="base_index_value"
                                                 type="number"
-                                                step="any"
+                                                step="0.0001"
                                                 value={formData.base_index_value}
                                                 onChange={(e) => setFormData({ ...formData, base_index_value: e.target.value })}
-                                                placeholder="contoh: 150000 atau 0.8"
+                                                placeholder="contoh: 150000 atau 0.8250"
                                                 className={errors.base_index_value ? 'border-red-500' : ''}
                                             />
                                             {errors.base_index_value && <p className="text-xs text-red-500">{errors.base_index_value}</p>}
-                                            <p className="text-xs text-gray-500">Nilai tarif/indeks ini akan dikalikan dengan volume capaian.</p>
+                                            <p className="text-xs text-gray-500">Nilai tarif/indeks ini akan dikalikan dengan volume capaian (mendukung hingga 4 digit desimal di belakang koma).</p>
                                         </div>
 
                                         {isMedicalUnit && (

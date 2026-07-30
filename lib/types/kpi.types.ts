@@ -24,6 +24,9 @@ export interface KPIIndicator {
   is_active: boolean
   base_index_value?: number | null
   calculation_method?: 'indexing' | 'priority' | null
+  measurement_type?: 'scoring' | 'quantitative' | null
+  unit_tariff?: number | null
+  service_types?: string[] | null
 }
 
 // Scoring criterion interface

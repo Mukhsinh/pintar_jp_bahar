@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 
+  // External packages for server
+  serverExternalPackages: ['xlsx'],
+
   // Enable compression
   compress: true,
 
@@ -11,7 +14,6 @@ const nextConfig = {
     },
     // Optimize package imports — tree-shake heavy icon libraries
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    serverExternalPackages: ['xlsx'],
   },
 
   // Skip build checks for faster deploys

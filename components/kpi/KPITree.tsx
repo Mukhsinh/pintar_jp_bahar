@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, memo } from 'react'
 import { ChevronDown, ChevronRight, Edit, Trash2, Plus, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { formatNumber, formatCurrency } from '@/lib/utils/format'
+import { formatNumber, formatCurrency, formatDecimal } from '@/lib/utils/format'
 import type { KPICategory, KPIIndicator, KPISubIndicator } from '@/lib/types/kpi.types'
 
 interface KPITreeProps {
@@ -280,10 +280,15 @@ const KPITree = memo(function KPITree({
                                   </span>
                                 )}
                               </div>
-                              <div className="flex gap-4 mt-1 text-sm text-gray-600">
-                                <span>Target: {formatNumber(indicator.target_value || 0, 2)}</span>
+                              <div className="flex gap-4 mt-1 text-sm text-gray-600 flex-wrap items-center">
+                                <span>Target: {formatDecimal(indicator.target_value || 0, 4)}</span>
                                 {indicator.measurement_unit && (
                                   <span>Satuan: {indicator.measurement_unit}</span>
+                                )}
+                                {indicator.base_index_value !== undefined && indicator.base_index_value !== null && Number(indicator.base_index_value) > 0 && (
+                                  <span className="font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 text-xs">
+                                    Tarif Dasar / Indeks: {Number(indicator.base_index_value) >= 1000 ? formatCurrency(indicator.base_index_value) : formatDecimal(indicator.base_index_value, 4)}
+                                  </span>
                                 )}
                               </div>
                               {indicator.description && (
@@ -363,7 +368,9 @@ const KPITree = memo(function KPITree({
                                         <div className="flex gap-1 mt-2 flex-wrap">
                                           {sub.measurement_type === 'quantitative' ? (
                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
-                                              <span className="font-bold">Tarif Dasar: {formatCurrency(sub.base_index_value || 0)}</span>
+                                              <span className="font-bold">
+                                                Tarif Dasar / Indeks: {Number(sub.base_index_value || 0) >= 1000 ? formatCurrency(sub.base_index_value || 0) : formatDecimal(sub.base_index_value || 0, 4)}
+                                              </span>
                                               <span className="opacity-70">(Satuan: {sub.measurement_unit || 'Volume'})</span>
                                             </span>
                                           ) : (
