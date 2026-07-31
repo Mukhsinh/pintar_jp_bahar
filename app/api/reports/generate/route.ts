@@ -542,12 +542,12 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
       const catMeta = catAssessments[0].m_kpi_indicators?.m_kpi_categories || {}
       const categoryWeight = parseFloat(catMeta.weight_percentage) || 0
       const isActivityStyle = catMeta.configuration_style === 'activity'
+      const isWeightedCat = catMeta.is_weighted !== false
 
-      const hasAnyIndicatorWeight = catAssessments.some((a: any) => parseFloat(a.weight_percentage) > 0)
-      const effectivelyWeighted = catMeta.is_weighted !== false && (categoryWeight > 0 || hasAnyIndicatorWeight)
-
-      let totalRealisasi = 0
-      let totalTarget = 0
+      let totalWeightedScore = 0
+      let totalWeightSum = 0
+      let totalUnweightedScore = 0
+      let unweightedCount = 0
 
       for (const a of catAssessments) {
         // Mark as processed so we don't count it again in "others"
@@ -557,12 +557,13 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
         const basicVal = parseFloat(a.m_kpi_indicators?.base_index_value) || 0
         const rawScore = a.score  // may be null for legacy rows
         const indName = a.m_kpi_indicators?.name || '-'
-        const indWeight = parseFloat(a.weight_percentage) || 0
-        const indTarget = parseFloat(a.target_value) || 100
+        const indWeight = parseFloat(a.weight_percentage) || parseFloat(a.m_kpi_indicators?.weight_percentage) || 0
+        const indTarget = parseFloat(a.target_value) || parseFloat(a.m_kpi_indicators?.target_value) || 0
         const calcMethod = a.m_kpi_indicators?.calculation_method || 'indexing'
 
         const isPriority = calcMethod === 'priority'
-        const isActivityIndexing = (isActivityStyle || basicVal > 0) && !isPriority
+        // An indicator is an activity ONLY if category is activity style OR calcMethod is priority OR base_index_value > 1 (tariff)
+        const isActivity = isActivityStyle || isPriority || basicVal > 1
 
         // Resolve effective score: prefer main row score, fallback to sub-assessment aggregate
         let effectiveScore: number
@@ -577,8 +578,8 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
         const indicatorScore = effectiveScore
 
         let activityValue = 0
-        if (isPriority || isActivityIndexing) {
-          if (indicatorScore > 0 && (isActivityStyle || basicVal <= 1)) {
+        if (isActivity) {
+          if (indicatorScore > 0 && basicVal <= 1) {
             activityValue = indicatorScore
           } else if (basicVal > 1) {
             activityValue = indRealization * basicVal
@@ -597,38 +598,38 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
           score: indicatorScore,
           basic_value: basicVal,
           calculation_method: calcMethod,
-          is_weighted: effectivelyWeighted && calcMethod === 'indexing',
-          is_activity: isPriority || isActivityIndexing,
+          is_weighted: isWeightedCat && !isActivity,
+          is_activity: isActivity,
           activity_value: activityValue,
           is_priority: isPriority
         })
 
-        if (isPriority || isActivityIndexing) {
+        if (isActivity) {
           totalActivityRupiah = Number(totalActivityRupiah) + Number(activityValue)
         } else {
           if (isMedicalUnit) {
-            totalRealisasi = Number(totalRealisasi) + Number(indRealization)
+            totalUnweightedScore += indicatorScore
+            unweightedCount++
           } else {
-            if (effectivelyWeighted) {
-              totalRealisasi = Number(totalRealisasi) + (Number(indRealization) * (Number(indWeight) / 100))
-              totalTarget = Number(totalTarget) + (Number(indTarget) * (Number(indWeight) / 100))
+            if (isWeightedCat && indWeight > 0) {
+              totalWeightedScore += indicatorScore * (indWeight / 100)
+              totalWeightSum += indWeight
             } else {
-              const achievement = Number(indTarget) === 0 ? 100 : (Number(indRealization) / Number(indTarget)) * 100
-              totalRealisasi = Number(totalRealisasi) + achievement
-              totalTarget = Number(totalTarget) + 100
+              totalUnweightedScore += indicatorScore
+              unweightedCount++
             }
           }
         }
       }
 
       if (isMedicalUnit) {
-        return totalRealisasi
-      } else if (!effectivelyWeighted) {
-        // Fallback for unweighted: average achievement
-        return totalTarget > 0 ? (totalRealisasi / totalTarget) * 100 : 0
-      } else if (totalTarget > 0) {
-        // Weighted score scaled by category weight
-        return (totalRealisasi / totalTarget) * categoryWeight
+        return totalWeightedScore + totalUnweightedScore
+      } else if (totalWeightSum > 0) {
+        const categoryAchievementPct = (totalWeightedScore / totalWeightSum) * 100
+        return categoryWeight > 0 ? (categoryAchievementPct / 100) * categoryWeight : categoryAchievementPct
+      } else if (unweightedCount > 0) {
+        const categoryAchievementPct = totalUnweightedScore / unweightedCount
+        return categoryWeight > 0 ? (categoryAchievementPct / 100) * categoryWeight : categoryAchievementPct
       }
       return 0
     }
@@ -970,7 +971,7 @@ async function generateKPIAchievementReport(supabase: any, period: string, unitI
     const calcMethod = row.m_kpi_indicators.calculation_method || 'indexing'
     const isWeightedCat = row.m_kpi_indicators.m_kpi_categories?.is_weighted !== false
 
-    const isActivity = catStyle === 'activity' || calcMethod === 'priority' || basicVal > 0
+    const isActivity = catStyle === 'activity' || calcMethod === 'priority' || basicVal > 1
 
     if (existing) {
       existing.count++
