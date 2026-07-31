@@ -56,6 +56,15 @@ function checkPageBreak(doc: any, yPos: number, neededHeight: number) {
   return yPos
 }
 
+function formatScore(val: number | string | undefined | null, decimals: number = 2): string {
+  const num = typeof val === 'string' ? parseFloat(val) : (val || 0)
+  if (isNaN(num)) return '0,00'
+  return new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(num)
+}
+
 interface ReportExportOptions {
   reportType: string
   period: string
@@ -158,10 +167,10 @@ export async function generateIncentiveSlipPDF(data: IncentiveSlipData | Incenti
       startY: 92,
       head: [['Komponen Penilaian', 'Skor', 'Bobot (%)', 'Nilai Tertimbang']],
       body: [
-        ['P1 (Kinerja Utama/Posisi)', Math.round(slip.p1Score).toLocaleString('id-ID'), `${Math.round(p1w)}%`, Math.round(slip.p1Weighted).toLocaleString('id-ID')],
-        ['P2 (Kinerja Tambahan)', Math.round(slip.p2Score).toLocaleString('id-ID'), `${Math.round(p2w)}%`, Math.round(slip.p2Weighted).toLocaleString('id-ID')],
-        ['P3 (Perilaku/Potensi)', Math.round(slip.p3Score).toLocaleString('id-ID'), `${Math.round(p3w)}%`, Math.round(slip.p3Weighted).toLocaleString('id-ID')],
-        [{ content: 'Total Skor Akhir', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, '-', '-', { content: Math.round(slip.finalScore).toLocaleString('id-ID'), styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }],
+        ['P1 (Kinerja Utama/Posisi)', formatScore(slip.p1Score), `${formatScore(p1w)}%`, formatScore(slip.p1Weighted)],
+        ['P2 (Kinerja Tambahan)', formatScore(slip.p2Score), `${formatScore(p2w)}%`, formatScore(slip.p2Weighted)],
+        ['P3 (Perilaku/Potensi)', formatScore(slip.p3Score), `${formatScore(p3w)}%`, formatScore(slip.p3Weighted)],
+        [{ content: 'Total Skor Akhir', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, '-', '-', { content: formatScore(slip.finalScore), styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }],
       ],
       theme: 'grid',
       headStyles: { fillColor: [44, 62, 80], textColor: 255, fontStyle: 'bold' },
@@ -186,7 +195,7 @@ export async function generateIncentiveSlipPDF(data: IncentiveSlipData | Incenti
           // Otherwise it's the raw score
           const scoreDisplay = (d.is_activity && !d.is_priority) ?
             new Intl.NumberFormat('id-ID').format(Math.round(d.activity_value || 0)) :
-            Math.round(d.score).toLocaleString('id-ID')
+            formatScore(d.score)
 
           return [
             idx + 1,
@@ -255,10 +264,10 @@ export async function generateIncentiveSlipPDF(data: IncentiveSlipData | Incenti
     doc.text(`: Rp ${fmtNum(remainingForIndex)}`, 95, yPos)
     yPos += 5
     doc.text(`Total Skor Kolektif Unit`, 20, yPos)
-    doc.text(`: ${fmtNum(totalSkorUnit)}`, 95, yPos)
+    doc.text(`: ${formatScore(totalSkorUnit)}`, 95, yPos)
     yPos += 5
     doc.text(`Nilai PIR`, 20, yPos)
-    doc.text(`: Rp ${fmtNum(pirValue)}`, 95, yPos)
+    doc.text(`: Rp ${formatScore(pirValue)}`, 95, yPos)
     yPos += 3
 
     // === PERHITUNGAN INSENTIF ===
@@ -476,7 +485,7 @@ export async function generateSummaryReportPDF(
     body = results.map((r, i) => [
       i + 1,
       r.unit_name,
-      r.average_score,
+      formatScore(r.average_score),
       parseFloat(String(r.total_incentive)).toLocaleString('id-ID'),
       r.employee_count
     ])
@@ -497,11 +506,11 @@ export async function generateSummaryReportPDF(
       r.nik || '-',
       r.employee_name,
       r.unit,
-      Math.round(Number(r.p1_score) || 0),
-      Math.round(Number(r.p2_score) || 0),
-      Math.round(Number(r.p3_score) || 0),
-      Math.round(Number(r.total_score) || 0),
-      Math.round(Number(r.pir_value) || 0).toLocaleString('id-ID'),
+      formatScore(r.p1_score),
+      formatScore(r.p2_score),
+      formatScore(r.p3_score),
+      formatScore(r.total_score),
+      formatScore(r.pir_value),
       Math.round(Number(r.total_activity_rupiah || r.total_activity || 0)).toLocaleString('id-ID'),
       Math.round(Number(r.gross_incentive) || 0).toLocaleString('id-ID'),
       Math.round(Number(r.tax_amount) || 0).toLocaleString('id-ID'),
@@ -565,16 +574,16 @@ export async function exportToPDF(options: ReportExportOptions): Promise<Uint8Ar
         bankName: item.bank_name,
         bankAccountNumber: item.bank_account_number,
         bankAccountHolder: item.bank_account_holder,
-        p1Score: parseFloat(item.p1_score) || 0,
-        p2Score: parseFloat(item.p2_score) || 0,
-        p3Score: parseFloat(item.p3_score) || 0,
+        p1Score: parseNum(item.p1_score),
+        p2Score: parseNum(item.p2_score),
+        p3Score: parseNum(item.p3_score),
         p1Weight: p1w,
         p2Weight: p2w,
         p3Weight: p3w,
-        p1Weighted: parseFloat(item.p1_weighted || item.p1_score) || 0,
-        p2Weighted: parseFloat(item.p2_weighted || item.p2_score) || 0,
-        p3Weighted: parseFloat(item.p3_weighted || item.p3_score) || 0,
-        finalScore: parseFloat(item.total_score) || 0,
+        p1Weighted: parseNum(item.p1_weighted ?? item.p1_score),
+        p2Weighted: parseNum(item.p2_weighted ?? item.p2_score),
+        p3Weighted: parseNum(item.p3_weighted ?? item.p3_score),
+        finalScore: parseNum(item.total_score),
         pirValue: parseNum(item.pir_value),
         totalSkorUnit: parseNum(item.total_skor_unit),
         unitProportion: parseNum(item.unit_proportion),

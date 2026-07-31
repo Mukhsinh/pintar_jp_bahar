@@ -4,7 +4,7 @@ import { exportToPDF } from '@/lib/export/pdf-export'
 
 /**
  * Export reports to Excel or PDF
- * Requirements: 12.5, 12.6
+ * Precision: 2 decimals in PDF and Excel
  */
 export async function POST(request: NextRequest) {
   try {
