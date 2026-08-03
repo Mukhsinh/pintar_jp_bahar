@@ -81,13 +81,14 @@ export async function middleware(request: NextRequest) {
   })
 
   try {
-    // 0. Skip middleware for static assets and favicon
+    // 0. Skip middleware for static assets, favicon, health check, and settings API
     if (
       pathname.startsWith('/_next') ||
       pathname.startsWith('/favicon') ||
       pathname.startsWith('/icon') ||
       pathname.includes('.') ||
-      pathname === '/api/health'
+      pathname === '/api/health' ||
+      pathname === '/api/settings'
     ) {
       return response
     }
@@ -97,40 +98,23 @@ export async function middleware(request: NextRequest) {
       employeeCache.clear()
     }
 
-    // 1. Create supabase client
+    // 1. Create supabase client with modern getAll / setAll
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value
+          getAll() {
+            return request.cookies.getAll()
           },
-          set(name: string, value: string, options: CookieOptions) {
-            // Update request cookies so subsequent calls to get work
-            request.cookies.set({
-              name,
-              value,
-              ...options,
+          setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+            response = NextResponse.next({
+              request,
             })
-            // Set cookie on the same response object to accumulate all cookies
-            response.cookies.set({
-              name,
-              value,
-              ...options,
-            })
-          },
-          remove(name: string, options: CookieOptions) {
-            request.cookies.set({
-              name,
-              value: '',
-              ...options,
-            })
-            response.cookies.set({
-              name,
-              value: '',
-              ...options,
-            })
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options)
+            )
           },
         },
       }
@@ -169,6 +153,11 @@ export async function middleware(request: NextRequest) {
 
     // 4. Validate session
     if (!session) {
+      // For API routes, return JSON 401 Unauthorized instead of redirect HTML
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
       // Only redirect to login if not already on login page
       if (pathname !== '/login') {
         const loginUrl = new URL('/login', request.url)
@@ -221,6 +210,9 @@ export async function middleware(request: NextRequest) {
 
         if (employeeError || !employee) {
           console.error('[MIDDLEWARE] User not found in employees and no admin metadata:', session.user.email)
+          if (pathname.startsWith('/api/')) {
+            return NextResponse.json({ error: 'User record not found' }, { status: 404 })
+          }
           const loginUrl = new URL('/login', request.url)
           loginUrl.searchParams.set('error', 'user_not_found')
           return NextResponse.redirect(loginUrl)
@@ -236,6 +228,9 @@ export async function middleware(request: NextRequest) {
 
     // 6. Check if employee is active
     if (!employeeData.is_active) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Account inactive' }, { status: 403 })
+      }
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('error', 'inactive')
 
@@ -250,7 +245,7 @@ export async function middleware(request: NextRequest) {
 
     // 7. Check route authorization
     // Superadmins can bypass route checks (they have full access)
-    if (employeeData.role !== 'superadmin' && !isRouteAllowed(pathname, employeeData.role)) {
+    if (employeeData.role !== 'superadmin' && !pathname.startsWith('/api/') && !isRouteAllowed(pathname, employeeData.role)) {
       const forbiddenUrl = new URL('/forbidden', request.url)
       return NextResponse.redirect(forbiddenUrl)
     }
@@ -264,6 +259,10 @@ export async function middleware(request: NextRequest) {
     return response
   } catch (error: any) {
     console.error('Middleware error:', error)
+
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
 
     // On any error, redirect to login and clear cookies
     const loginUrl = new URL('/login', request.url)
@@ -293,6 +292,8 @@ export const config = {
     '/settings/:path*',
     '/profile/:path*',
     '/notifications/:path*',
+    // API routes
+    '/api/:path*',
     // Legacy routes for redirect
     '/admin/:path*',
     '/manager/:path*',

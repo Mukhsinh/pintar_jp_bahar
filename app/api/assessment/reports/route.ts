@@ -3,6 +3,37 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { isMedicalUnit } from '@/lib/utils/medical-unit'
 import { calculateCategoryScore, calculateTotalScore } from '@/lib/utils/score-calculator'
 
+async function getUserEmployee(adminClient: any, user: any) {
+  const { data: emp } = await adminClient
+    .from('m_employees')
+    .select('id, role, unit_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (emp) return emp
+
+  if (user.email) {
+    const { data: byEmail } = await adminClient
+      .from('m_employees')
+      .select('id, role, unit_id')
+      .eq('email', user.email)
+      .maybeSingle()
+
+    if (byEmail) return byEmail
+  }
+
+  const isSuperAdmin =
+    user.app_metadata?.role === 'superadmin' ||
+    user.user_metadata?.role === 'superadmin' ||
+    user.email === 'admin@sungaibahar.com'
+
+  if (isSuperAdmin) {
+    return { id: user.id, role: 'superadmin', unit_id: '0' }
+  }
+
+  return null
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -18,24 +49,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
+    const currentEmp = await getUserEmployee(adminClient, user)
+
     switch (action) {
       case 'periods':
         return await getAvailablePeriods(adminClient)
 
       case 'units':
-        return await getAvailableUnits(adminClient, user)
+        return await getAvailableUnits(adminClient, currentEmp)
 
       case 'report':
         if (!period) {
           return NextResponse.json({ success: false, error: 'Period is required' }, { status: 400 })
         }
-        return await getAssessmentReport(adminClient, user, period, unitId)
+        return await getAssessmentReport(adminClient, currentEmp, period, unitId)
 
       case 'comparison':
         if (!period) {
           return NextResponse.json({ success: false, error: 'Period is required' }, { status: 400 })
         }
-        return await getPeriodComparison(adminClient, user, period, unitId)
+        return await getPeriodComparison(adminClient, currentEmp, period, unitId)
 
       default:
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 })
@@ -43,7 +76,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Assessment reports API error:', error)
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: error.message || 'Internal server error' },
       { status: 500 }
     )
   }
@@ -67,9 +100,8 @@ async function getAvailablePeriods(supabase: any) {
   return NextResponse.json({ success: true, periods })
 }
 
-async function getAvailableUnits(supabase: any, user: any) {
-  // Get user role
-  const userRole = user.user_metadata?.role
+async function getAvailableUnits(supabase: any, currentEmp: any) {
+  const userRole = currentEmp?.role
 
   let query = supabase
     .from('m_units')
@@ -78,16 +110,8 @@ async function getAvailableUnits(supabase: any, user: any) {
     .order('name')
 
   // If unit manager, only show their unit
-  if (userRole === 'unit_manager') {
-    const { data: userEmployee } = await supabase
-      .from('m_employees')
-      .select('unit_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (userEmployee) {
-      query = query.eq('id', userEmployee.unit_id)
-    }
+  if (userRole === 'unit_manager' && currentEmp?.unit_id) {
+    query = query.eq('id', currentEmp.unit_id)
   }
 
   const { data, error } = await query
@@ -104,8 +128,9 @@ async function getAvailableUnits(supabase: any, user: any) {
   return NextResponse.json({ success: true, units: filteredUnits })
 }
 
-async function getAssessmentReport(supabase: any, user: any, period: string, unitId?: string | null) {
-  const userRole = user.user_metadata?.role
+async function getAssessmentReport(supabase: any, currentEmp: any, period: string, unitId?: string | null) {
+  const userRole = currentEmp?.role
+  const userUnitId = currentEmp?.unit_id
 
   // Build base query for employees
   let employeeQuery = supabase
@@ -115,16 +140,8 @@ async function getAssessmentReport(supabase: any, user: any, period: string, uni
     .neq('role', 'superadmin')
 
   // Apply unit filtering based on role
-  if (userRole === 'unit_manager') {
-    const { data: userEmployee } = await supabase
-      .from('m_employees')
-      .select('unit_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (userEmployee) {
-      employeeQuery = employeeQuery.eq('unit_id', userEmployee.unit_id)
-    }
+  if (userRole === 'unit_manager' && userUnitId) {
+    employeeQuery = employeeQuery.eq('unit_id', userUnitId)
   } else if (unitId && unitId !== 'all') {
     employeeQuery = employeeQuery.eq('unit_id', unitId)
   }
@@ -202,20 +219,20 @@ async function getAssessmentReport(supabase: any, user: any, period: string, uni
   const totalEmployees = employeesData.length
   const completionRate = totalEmployees > 0 ? (completedEmployees / totalEmployees) * 100 : 0
 
-  // Get detailed assessment data for score calculations
+  // Get detailed assessment data for score calculations with inner join
   let assessmentQuery = supabase
     .from('t_kpi_assessments')
     .select(`
       *,
-      m_employees!employee_id (
+      m_employees!inner!employee_id (
         full_name,
         role,
         unit_id,
         m_units!unit_id (name)
       ),
-      m_kpi_indicators!indicator_id (
+      m_kpi_indicators!inner!indicator_id (
         name,
-        m_kpi_categories!category_id (
+        m_kpi_categories!inner!category_id (
           category
         )
       )
@@ -224,16 +241,8 @@ async function getAssessmentReport(supabase: any, user: any, period: string, uni
     .neq('m_employees.role', 'superadmin')
 
   // Apply same unit filtering
-  if (userRole === 'unit_manager') {
-    const { data: userEmployee } = await supabase
-      .from('m_employees')
-      .select('unit_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (userEmployee) {
-      assessmentQuery = assessmentQuery.eq('m_employees.unit_id', userEmployee.unit_id)
-    }
+  if (userRole === 'unit_manager' && userUnitId) {
+    assessmentQuery = assessmentQuery.eq('m_employees.unit_id', userUnitId)
   } else if (unitId && unitId !== 'all') {
     assessmentQuery = assessmentQuery.eq('m_employees.unit_id', unitId)
   }
@@ -241,26 +250,26 @@ async function getAssessmentReport(supabase: any, user: any, period: string, uni
   const { data: assessmentData, error: assessmentError } = await assessmentQuery
 
   if (assessmentError) {
+    console.error('Report assessmentQuery error:', assessmentError)
     return NextResponse.json({ success: false, error: assessmentError.message }, { status: 500 })
   }
 
   // Calculate category averages
-  const categoryScores = { p1: [], p2: [], p3: [] } as any
   const employeeScores = new Map()
   const indicatorAchievements = new Map()
 
   assessmentData?.forEach((assessment: any) => {
-    const category = assessment.m_kpi_indicators.m_kpi_categories.category.toLowerCase()
+    const category = assessment.m_kpi_indicators?.m_kpi_categories?.category?.toLowerCase() || ''
     const score = assessment.score || 0
     const achievement = assessment.achievement_percentage || 0
     const employeeId = assessment.employee_id
-    const indicatorName = assessment.m_kpi_indicators.name
+    const indicatorName = assessment.m_kpi_indicators?.name || '-'
 
     // Collect employee total scores
     if (!employeeScores.has(employeeId)) {
       employeeScores.set(employeeId, {
-        employee_name: assessment.m_employees.full_name,
-        unit_name: assessment.m_employees.m_units.name,
+        employee_name: assessment.m_employees?.full_name || 'N/A',
+        unit_name: assessment.m_employees?.m_units?.name || 'N/A',
         scores: [],
         p1_scores: [],
         p2_scores: [],
@@ -277,7 +286,7 @@ async function getAssessmentReport(supabase: any, user: any, period: string, uni
     if (!indicatorAchievements.has(indicatorName)) {
       indicatorAchievements.set(indicatorName, {
         indicator_name: indicatorName,
-        category: assessment.m_kpi_indicators.m_kpi_categories.category,
+        category: assessment.m_kpi_indicators?.m_kpi_categories?.category || '',
         achievements: []
       })
     }
@@ -355,18 +364,18 @@ async function getAssessmentReport(supabase: any, user: any, period: string, uni
   return NextResponse.json({ success: true, report })
 }
 
-async function getPeriodComparison(supabase: any, user: any, currentPeriod: string, unitId?: string | null) {
+async function getPeriodComparison(supabase: any, currentEmp: any, currentPeriod: string, unitId?: string | null) {
   // Get previous period (assuming YYYY-MM format)
   const [year, month] = currentPeriod.split('-').map(Number)
   const prevDate = new Date(year, month - 2, 1) // month - 2 because Date month is 0-indexed
   const previousPeriod = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
 
   // Get current period data
-  const currentResponse = await getAssessmentReport(supabase, user, currentPeriod, unitId)
+  const currentResponse = await getAssessmentReport(supabase, currentEmp, currentPeriod, unitId)
   const currentData = await currentResponse.json()
 
   // Get previous period data
-  const previousResponse = await getAssessmentReport(supabase, user, previousPeriod, unitId)
+  const previousResponse = await getAssessmentReport(supabase, currentEmp, previousPeriod, unitId)
   const previousData = await previousResponse.json()
 
   if (!currentData.success || !previousData.success) {
