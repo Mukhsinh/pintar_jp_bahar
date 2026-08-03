@@ -202,13 +202,15 @@ async function upsertAssessment(adminClient: any, assessment: Assessment): Promi
   return savedData
 }
 
+import { getAuthenticatedUser } from '@/lib/supabase/auth-helper'
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const user = await getAuthenticatedUser(supabase, request)
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -264,8 +266,8 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const user = await getAuthenticatedUser(supabase, request)
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

@@ -79,7 +79,10 @@ const rolePermissions: Record<Role, Permission[]> = {
     'profile:read',
     'profile:update',
   ],
-  employee: [],
+  employee: [
+    'profile:read',
+    'profile:update',
+  ],
 }
 
 // Define route permissions

@@ -56,19 +56,23 @@ export default function AssessmentPageContent({
     try {
       // Load periods first
       const periodsRes = await fetch('/api/assessment/reports?action=periods')
-      const periodsData = await periodsRes.json()
-      if (periodsData.success && periodsData.periods) {
-        setAvailablePeriods(periodsData.periods)
-        if (!selectedPeriod && periodsData.periods.length > 0) {
-          setSelectedPeriod(periodsData.periods[0])
+      if (periodsRes.ok) {
+        const periodsData = await periodsRes.json()
+        if (periodsData.success && periodsData.periods) {
+          setAvailablePeriods(periodsData.periods)
+          if (!selectedPeriod && periodsData.periods.length > 0) {
+            setSelectedPeriod(periodsData.periods[0])
+          }
         }
       }
 
       // Then load units (sequential to avoid auth rate limit)
       const unitsRes = await fetch('/api/assessment/reports?action=units')
-      const unitsData = await unitsRes.json()
-      if (unitsData.success && unitsData.units) {
-        setAvailableUnits(unitsData.units)
+      if (unitsRes.ok) {
+        const unitsData = await unitsRes.json()
+        if (unitsData.success && unitsData.units) {
+          setAvailableUnits(unitsData.units)
+        }
       }
     } catch (error) {
       console.error('Error loading initial data:', error)
@@ -76,7 +80,7 @@ export default function AssessmentPageContent({
   }
 
   // Load employees for assessment
-  const loadEmployees = async () => {
+  const loadEmployees = async (retryCount = 0) => {
     if (!selectedPeriod) return
 
     setLoading(true)
@@ -89,12 +93,24 @@ export default function AssessmentPageContent({
         const data = await response.json()
         setEmployees(data.employees || [])
       } else {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({ error: 'Gagal memuat data' }))
+
+        // Handle temporary 401 race condition with a silent retry
+        if (response.status === 401 && retryCount < 2) {
+          console.warn(`[loadEmployees] 401 received, retrying (${retryCount + 1}/2)...`)
+          await new Promise(res => setTimeout(res, 500))
+          return loadEmployees(retryCount + 1)
+        }
+
         setError(errorData.error || 'Gagal memuat data pegawai')
         setEmployees([])
       }
     } catch (error) {
       console.error('Error loading employees:', error)
+      if (retryCount < 2) {
+        await new Promise(res => setTimeout(res, 500))
+        return loadEmployees(retryCount + 1)
+      }
       setError('Terjadi kesalahan saat memuat data')
       setEmployees([])
     } finally {
@@ -103,7 +119,7 @@ export default function AssessmentPageContent({
   }
 
   // Load assessment status summary
-  const loadSummary = async () => {
+  const loadSummary = async (retryCount = 0) => {
     if (!selectedPeriod) return
 
     try {
@@ -119,6 +135,9 @@ export default function AssessmentPageContent({
           not_started: 0,
           completion_rate: 0
         })
+      } else if (response.status === 401 && retryCount < 3) {
+        await new Promise(res => setTimeout(res, 600))
+        return loadSummary(retryCount + 1)
       }
     } catch (error) {
       console.error('Error loading summary:', error)

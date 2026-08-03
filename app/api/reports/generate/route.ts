@@ -16,29 +16,44 @@ async function batchedIn(
   filterColumn: string,
   filterValues: string[],
   additionalFilters?: (q: any) => any,
-  batchSize: number = 20 // Reduced from 50 to stay under 1000 rows with 30+ indicators/emp in Keperawatan unit
+  batchSize: number = 20
 ): Promise<any[]> {
   if (filterValues.length === 0) return []
 
   const results: any[] = []
+  const pageSize = 1000
+
   for (let i = 0; i < filterValues.length; i += batchSize) {
     const batch = filterValues.slice(i, i + batchSize)
-    let query = supabase.from(table).select(selectFields).in(filterColumn, batch)
-    if (additionalFilters) query = additionalFilters(query)
-    // Important: even with 50 emps, if indicators are many, we might hit 1000.
-    // Fetch up to 10000 rows per batch just in case, though PostgREST might still cap at 1000.
-    const { data, error } = await query.range(0, 10000)
-    if (error) {
-      console.error(`[batchedIn] Error fetching batch ${i / batchSize + 1} from ${table}:`, error)
-      throw error
-    }
-    if (data) results.push(...data)
+    let page = 0
+    let hasMore = true
 
-    if (data && data.length >= 1000 && batchSize > 10) {
-      console.warn(`[batchedIn] Warning: Batch potentially truncated (${data.length} rows returned). Consider reducing batchSize further.`)
+    while (hasMore) {
+      const from = page * pageSize
+      const to = from + pageSize - 1
+
+      let query = supabase.from(table).select(selectFields).in(filterColumn, batch).range(from, to)
+      if (additionalFilters) query = additionalFilters(query)
+
+      const { data, error } = await query
+      if (error) {
+        console.error(`[batchedIn] Error fetching batch ${Math.floor(i / batchSize) + 1} page ${page} from ${table}:`, error)
+        throw error
+      }
+
+      if (data && data.length > 0) {
+        results.push(...data)
+        if (data.length < pageSize) {
+          hasMore = false
+        } else {
+          page++
+        }
+      } else {
+        hasMore = false
+      }
     }
   }
-  console.log(`[batchedIn] ${table}.${filterColumn}: ${filterValues.length} IDs -> ${Math.ceil(filterValues.length / batchSize)} batches -> ${results.length} rows`)
+  console.log(`[batchedIn] ${table}.${filterColumn}: ${filterValues.length} IDs -> ${results.length} total rows fetched`)
   return results
 }
 
@@ -606,18 +621,18 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
 
         if (isActivity) {
           totalActivityRupiah = Number(totalActivityRupiah) + Number(activityValue)
+        }
+
+        if (isMedicalUnit) {
+          totalUnweightedScore += indicatorScore
+          unweightedCount++
         } else {
-          if (isMedicalUnit) {
+          if (isWeightedCat && indWeight > 0) {
+            totalWeightedScore += indicatorScore * (indWeight / 100)
+            totalWeightSum += indWeight
+          } else {
             totalUnweightedScore += indicatorScore
             unweightedCount++
-          } else {
-            if (isWeightedCat && indWeight > 0) {
-              totalWeightedScore += indicatorScore * (indWeight / 100)
-              totalWeightSum += indWeight
-            } else {
-              totalUnweightedScore += indicatorScore
-              unweightedCount++
-            }
           }
         }
       }
@@ -626,7 +641,9 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
         return totalWeightedScore + totalUnweightedScore
       } else if (totalWeightSum > 0) {
         const categoryAchievementPct = (totalWeightedScore / totalWeightSum) * 100
-        return categoryWeight > 0 ? (categoryAchievementPct / 100) * categoryWeight : categoryAchievementPct
+        const weightedBase = categoryWeight > 0 ? (categoryAchievementPct / 100) * categoryWeight : categoryAchievementPct
+        const unweightedAdd = unweightedCount > 0 ? (totalUnweightedScore / unweightedCount) : 0
+        return weightedBase + unweightedAdd
       } else if (unweightedCount > 0) {
         const categoryAchievementPct = totalUnweightedScore / unweightedCount
         return categoryWeight > 0 ? (categoryAchievementPct / 100) * categoryWeight : categoryAchievementPct

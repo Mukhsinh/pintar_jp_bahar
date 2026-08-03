@@ -107,13 +107,15 @@ async function getAssessmentStatus(supabase: any, unitIdFilter: string | null, p
   return result
 }
 
+import { getAuthenticatedUser } from '@/lib/supabase/auth-helper'
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const user = await getAuthenticatedUser(supabase, request)
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

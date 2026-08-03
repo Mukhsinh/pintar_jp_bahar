@@ -11,7 +11,7 @@ export const routeConfigs: RouteConfig[] = [
   // Dashboard - accessible by all roles
   {
     path: '/dashboard',
-    allowedRoles: ['superadmin', 'unit_manager'],
+    allowedRoles: ['superadmin', 'unit_manager', 'employee'],
     description: 'Dashboard (role-specific content)'
   },
 

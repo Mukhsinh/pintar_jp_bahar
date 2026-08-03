@@ -22,8 +22,8 @@ export function clearAuthStorage(force = false) {
   if (typeof window === 'undefined') return
 
   try {
-    // Don't clear if on dashboard (sensitive) unless forced
-    if (!force && window.location.pathname === '/dashboard') {
+    // Don't clear auth storage if user is currently on an authenticated route unless forced
+    if (!force && window.location.pathname !== '/login') {
       return
     }
 
@@ -111,10 +111,22 @@ export function validateSessionData(): boolean {
 
 /**
  * Handle invalid refresh token error
- * Clears storage and redirects to login
+ * Clears storage and redirects to login, UNLESS it is a 429 Rate Limit error.
  */
-export async function handleInvalidRefreshToken() {
+export async function handleInvalidRefreshToken(error?: any) {
   if (typeof window === 'undefined') return
+
+  // Prevent clearing storage or logging out on 429 Rate Limit or temporary network errors
+  if (
+    error?.status === 429 ||
+    error?.statusCode === 429 ||
+    error?.message?.includes('429') ||
+    error?.message?.includes('rate limit') ||
+    error?.message?.includes('Too Many Requests')
+  ) {
+    console.warn('[AUTH_STORAGE] Suppressed clearing storage due to 429 Rate Limit')
+    return
+  }
 
   try {
     // Clear client-side storage first
@@ -129,7 +141,7 @@ export async function handleInvalidRefreshToken() {
     if (currentPath !== '/login') {
       window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}&error=session_expired`
     }
-  } catch (error: any) {
+  } catch (err: any) {
     window.location.href = '/login?error=session_expired'
   }
 }
@@ -186,7 +198,16 @@ export async function verifySession(): Promise<boolean> {
     const supabase = createClient()
     const { data: { session }, error } = await supabase.auth.getSession()
 
-    if (error || !session) {
+    if (error) {
+      if (error.status === 429 || error.message?.includes('429') || error.message?.includes('rate limit')) {
+        console.warn('[AUTH_SESSION] Rate limit hit during session verification. Preserving session.')
+        return true
+      }
+      await handleInvalidRefreshToken(error)
+      return false
+    }
+
+    if (!session) {
       await handleInvalidRefreshToken()
       return false
     }
@@ -194,7 +215,10 @@ export async function verifySession(): Promise<boolean> {
     return true
   } catch (error: any) {
     console.error('Error verifying session:', error)
-    await handleInvalidRefreshToken()
+    if (error?.status === 429 || error?.message?.includes('429')) {
+      return true
+    }
+    await handleInvalidRefreshToken(error)
     return false
   }
 }

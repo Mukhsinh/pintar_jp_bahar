@@ -1,3 +1,4 @@
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from './audit.service'
 
@@ -52,7 +53,11 @@ export async function getSettings(): Promise<{ data: Settings | null; error: str
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`)
       }
-      const rawData = await res.json()
+      const text = await res.text()
+      if (!text) {
+        return { data: null, error: 'Empty settings response' }
+      }
+      const rawData = JSON.parse(text)
 
       const settings: Settings = {
         companyInfo: rawData.company_info || {
@@ -76,18 +81,26 @@ export async function getSettings(): Promise<{ data: Settings | null; error: str
     }
   }
 
-  const supabase = createClient()
+  try {
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
 
-  const { data, error } = await supabase
-    .from('t_settings')
-    .select('key, value')
+    const { data, error } = await supabase
+      .from('t_settings')
+      .select('key, value')
 
-  if (error) {
-    console.error('Failed to fetch settings:', error)
-    return { data: null, error: error.message }
+    if (error) {
+      console.error('Failed to fetch settings:', error)
+      return { data: null, error: error.message }
+    }
+
+    return { data: transformSettingsData(data), error: null }
+  } catch (err: any) {
+    console.error('Failed to fetch server settings:', err)
+    return { data: null, error: err.message }
   }
-
-  return { data: transformSettingsData(data), error: null }
 }
 
 export async function getSetting(key: string): Promise<{ data: any | null; error: string | null }> {
@@ -120,7 +133,10 @@ export async function getSetting(key: string): Promise<{ data: any | null; error
     }
   }
 
-  const supabase = createClient()
+  const supabase = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   const { data, error } = await supabase
     .from('t_settings')

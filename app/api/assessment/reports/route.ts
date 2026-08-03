@@ -34,6 +34,8 @@ async function getUserEmployee(adminClient: any, user: any) {
   return null
 }
 
+import { getAuthenticatedUser } from '@/lib/supabase/auth-helper'
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -44,8 +46,8 @@ export async function GET(request: NextRequest) {
     const unitId = searchParams.get('unit_id')
 
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const user = await getAuthenticatedUser(supabase, request)
+    if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 

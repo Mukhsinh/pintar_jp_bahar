@@ -1,11 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { clearAuthStorage } from '@/lib/utils/auth-session'
 import { Loader2, Eye, EyeOff, Mail, Lock, MessageCircle } from 'lucide-react'
-
 import { useSettings } from '@/lib/contexts/settings-context'
 
 function getErrorMessage(code: string | null): string | null {
@@ -19,7 +17,7 @@ function getErrorMessage(code: string | null): string | null {
   return msgs[code] || 'Terjadi kesalahan, silakan coba lagi'
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const { settings, loading: settingsLoading } = useSettings()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,9 +31,6 @@ export default function LoginPage() {
     setIsMounted(true)
     const code = searchParams.get('error')
     if (code) setError(getErrorMessage(code))
-
-    // Thoroughly clear any stale sessions on mount
-    clearAuthStorage(true)
   }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -45,9 +40,7 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      // Force a fresh client and clear local state one last time before sign in
-      const supabase = createClient(true)
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => { })
+      const supabase = createClient()
 
       const { data: auth, error: authErr } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
@@ -55,7 +48,11 @@ export default function LoginPage() {
       })
 
       if (authErr) {
-        setError(authErr.message || 'Email atau kata sandi salah')
+        let msg = authErr.message
+        if (msg === 'Invalid login credentials') {
+          msg = 'Email atau kata sandi salah'
+        }
+        setError(msg || 'Email atau kata sandi salah')
         setIsLoading(false)
         return
       }
@@ -66,14 +63,7 @@ export default function LoginPage() {
         return
       }
 
-      try {
-        await fetch('/api/users/sync-role', { method: 'POST' })
-      } catch (syncErr) {
-        console.error('[LOGIN] Sync role failed:', syncErr)
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 800))
-      window.location.replace('/dashboard')
+      window.location.href = '/dashboard'
     } catch (err: any) {
       console.error('[LOGIN] Unexpected error:', err)
       setError('Terjadi kesalahan sistem: ' + (err.message || 'Silakan coba lagi'))
@@ -97,7 +87,6 @@ export default function LoginPage() {
 
   return (
     <div className="h-screen flex flex-col items-center justify-center bg-gray-50/50 p-2 font-sans overflow-hidden">
-
       {/* Header Section */}
       <div className="flex flex-col items-center mb-3">
         <div className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center overflow-hidden mb-1.5 border border-gray-100">
@@ -217,5 +206,17 @@ export default function LoginPage() {
         </p>
       </footer>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center bg-gray-50/50">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

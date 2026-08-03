@@ -81,17 +81,18 @@ export async function middleware(request: NextRequest) {
   })
 
   try {
-    // 0. Skip middleware for static assets, favicon, health check, and settings API
+    // 0. Skip middleware for static assets, favicon, health check, and all API routes
     if (
       pathname.startsWith('/_next') ||
       pathname.startsWith('/favicon') ||
       pathname.startsWith('/icon') ||
       pathname.includes('.') ||
-      pathname === '/api/health' ||
-      pathname === '/api/settings'
+      pathname.startsWith('/api/')
     ) {
       return response
     }
+
+    console.log('[MIDDLEWARE] Path:', pathname, '| Cookies present:', request.cookies.getAll().map(c => c.name))
 
     // Background cleanup (only occasionally)
     if (shouldCleanup()) {
@@ -108,13 +109,17 @@ export async function middleware(request: NextRequest) {
             return request.cookies.getAll()
           },
           setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-            response = NextResponse.next({
-              request,
-            })
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            )
+            try {
+              cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+              response = NextResponse.next({
+                request,
+              })
+              cookiesToSet.forEach(({ name, value, options }) =>
+                response.cookies.set(name, value, options)
+              )
+            } catch (e) {
+              // Ignore cookie setting errors in middleware
+            }
           },
         },
       }
@@ -134,10 +139,16 @@ export async function middleware(request: NextRequest) {
     }
 
     const session = user ? { user } : null
+    console.log('[MIDDLEWARE] Path:', pathname, '| Session User:', user?.email || 'NONE', '| UserError:', userError?.message || 'NONE')
 
 
     // 2. Check if public route (login, reset-password, forbidden)
     if (isPublicRoute(pathname)) {
+      // If user is already authenticated and visits /login, redirect to /dashboard
+      if (session && pathname === '/login') {
+        const dashboardUrl = new URL('/dashboard', request.url)
+        return NextResponse.redirect(dashboardUrl)
+      }
       return response
     }
 
@@ -200,13 +211,31 @@ export async function middleware(request: NextRequest) {
         }
         employeeCache.set(session.user.id, employeeData)
       } else {
-        // 2. Fetch employee record for others
-        const { data: employee, error: employeeError } = await supabase
+        // 2. Fetch employee record for non-admin users - try user_id first, then email
+        let { data: employee, error: employeeError } = await supabase
           .from('m_employees')
-          .select('role, is_active')
+          .select('id, role, is_active')
           .eq('user_id', session.user.id)
           .limit(1)
           .maybeSingle()
+
+        if (!employee && session.user.email) {
+          const { data: empByEmail } = await supabase
+            .from('m_employees')
+            .select('id, role, is_active')
+            .eq('email', session.user.email)
+            .limit(1)
+            .maybeSingle()
+
+          if (empByEmail) {
+            employee = empByEmail
+            // Auto-sync user_id for seamless future lookups
+            await supabase
+              .from('m_employees')
+              .update({ user_id: session.user.id })
+              .eq('id', empByEmail.id)
+          }
+        }
 
         if (employeeError || !employee) {
           console.error('[MIDDLEWARE] User not found in employees and no admin metadata:', session.user.email)
@@ -227,9 +256,9 @@ export async function middleware(request: NextRequest) {
     }
 
     // 6. Check if employee is active
-    if (!employeeData.is_active) {
+    if (!employeeData || !employeeData.is_active) {
       if (pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Account inactive' }, { status: 403 })
+        return NextResponse.json({ error: 'Account inactive or not found' }, { status: 403 })
       }
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('error', 'inactive')
@@ -245,7 +274,7 @@ export async function middleware(request: NextRequest) {
 
     // 7. Check route authorization
     // Superadmins can bypass route checks (they have full access)
-    if (employeeData.role !== 'superadmin' && !pathname.startsWith('/api/') && !isRouteAllowed(pathname, employeeData.role)) {
+    if (employeeData && employeeData.role !== 'superadmin' && !pathname.startsWith('/api/') && !isRouteAllowed(pathname, employeeData.role)) {
       const forbiddenUrl = new URL('/forbidden', request.url)
       return NextResponse.redirect(forbiddenUrl)
     }
@@ -264,7 +293,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
-    // On any error, redirect to login and clear cookies
+    // Never redirect public routes (like /login) to /login to prevent infinite redirect loops
+    if (isPublicRoute(pathname)) {
+      return response
+    }
+
+    // On any error for protected routes, redirect to login and clear cookies
     const loginUrl = new URL('/login', request.url)
     const redirectResponse = NextResponse.redirect(loginUrl)
     const cookiesToClear = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token', 'sb-auth-token']
@@ -278,19 +312,32 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Protected routes
+    // Protected routes (exact and subpaths)
+    '/dashboard',
     '/dashboard/:path*',
+    '/units',
     '/units/:path*',
+    '/users',
     '/users/:path*',
+    '/pegawai',
     '/pegawai/:path*',
+    '/kpi-config',
     '/kpi-config/:path*',
+    '/pool',
     '/pool/:path*',
+    '/realization',
     '/realization/:path*',
+    '/assessment',
     '/assessment/:path*',
+    '/reports',
     '/reports/:path*',
+    '/audit',
     '/audit/:path*',
+    '/settings',
     '/settings/:path*',
+    '/profile',
     '/profile/:path*',
+    '/notifications',
     '/notifications/:path*',
     // API routes
     '/api/:path*',
