@@ -422,7 +422,7 @@ export async function POST(request: NextRequest) {
  * Bruto = Skor_Individu × PIR
  * Netto = Bruto - PPh21
  */
-async function generateIncentiveReport(supabase: any, period: string, unitId?: string, employeeId?: string) {
+export async function generateIncentiveReport(supabase: any, period: string, unitId?: string, employeeId?: string) {
   // 1. Get Pool
   const { data: poolData, error: poolError } = await supabase
     .from('t_pool')
@@ -549,10 +549,17 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
     const processedIndices = new Set<string>()
 
     const calcCategoryScore = (categoryName: string) => {
-      const catAssessments = empAssessments.filter((a: any) =>
-        a.m_kpi_indicators?.m_kpi_categories?.category === categoryName
-      )
-      if (catAssessments.length === 0) return 0
+      const targetCat = categoryName.trim().toUpperCase()
+      const catAssessments = empAssessments.filter((a: any) => {
+        const cat = (a.m_kpi_indicators?.m_kpi_categories?.category || '').trim().toUpperCase()
+        return cat === targetCat || cat.startsWith(targetCat)
+      })
+      let indexScore = 0
+      let priorityScore = 0
+
+      if (catAssessments.length === 0) {
+        return { indexScore: 0, priorityScore: 0 }
+      }
 
       const catMeta = catAssessments[0].m_kpi_indicators?.m_kpi_categories || {}
       const categoryWeight = parseFloat(catMeta.weight_percentage) || 0
@@ -577,17 +584,25 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
         const calcMethod = a.m_kpi_indicators?.calculation_method || 'indexing'
 
         const isPriority = calcMethod === 'priority'
-        // An indicator is an activity ONLY if category is activity style OR calcMethod is priority OR base_index_value > 1 (tariff)
-        const isActivity = isActivityStyle || isPriority || basicVal > 1
+        const isActivity = isPriority
 
-        // Resolve effective score: prefer main row score, fallback to sub-assessment aggregate
+        // Resolve effective score: prefer main row score, fallback to sub-assessment aggregate, tariff product, or computed achievement
         let effectiveScore: number
-        if (rawScore !== null && rawScore !== undefined) {
-          effectiveScore = parseFloat(rawScore) || 0
+        if (rawScore !== null && rawScore !== undefined && parseFloat(rawScore) > 0) {
+          effectiveScore = parseFloat(rawScore)
         } else {
           const subKey = `${empId}:${a.indicator_id}`
           const subAgg = subScoreMap.get(subKey)
-          effectiveScore = subAgg ? subAgg.score : 0
+          if (subAgg && subAgg.score > 0) {
+            effectiveScore = subAgg.score
+          } else if (basicVal > 1) {
+            effectiveScore = indRealization * basicVal
+          } else if (indTarget > 0) {
+            const achPct = Math.min(100, (indRealization / indTarget) * 100)
+            effectiveScore = indWeight > 0 ? (achPct * indWeight) / 100 : achPct
+          } else {
+            effectiveScore = indRealization
+          }
         }
 
         const indicatorScore = effectiveScore
@@ -601,6 +616,7 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
           } else {
             activityValue = indicatorScore || indRealization
           }
+          priorityScore += activityValue
         }
 
         // Track detail for slip
@@ -621,39 +637,50 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
 
         if (isActivity) {
           totalActivityRupiah = Number(totalActivityRupiah) + Number(activityValue)
-        }
-
-        if (isMedicalUnit) {
-          totalUnweightedScore += indicatorScore
-          unweightedCount++
         } else {
-          if (isWeightedCat && indWeight > 0) {
-            totalWeightedScore += indicatorScore * (indWeight / 100)
-            totalWeightSum += indWeight
-          } else {
+          if (isMedicalUnit) {
             totalUnweightedScore += indicatorScore
             unweightedCount++
+          } else {
+            if (isWeightedCat && indWeight > 0) {
+              totalWeightedScore += indicatorScore * (indWeight / 100)
+              totalWeightSum += indWeight
+            } else {
+              totalUnweightedScore += indicatorScore
+              unweightedCount++
+            }
           }
         }
       }
 
       if (isMedicalUnit) {
-        return totalWeightedScore + totalUnweightedScore
+        indexScore = totalWeightedScore + totalUnweightedScore
       } else if (totalWeightSum > 0) {
         const categoryAchievementPct = (totalWeightedScore / totalWeightSum) * 100
         const weightedBase = categoryWeight > 0 ? (categoryAchievementPct / 100) * categoryWeight : categoryAchievementPct
         const unweightedAdd = unweightedCount > 0 ? (totalUnweightedScore / unweightedCount) : 0
-        return weightedBase + unweightedAdd
+        indexScore = weightedBase + unweightedAdd
       } else if (unweightedCount > 0) {
         const categoryAchievementPct = totalUnweightedScore / unweightedCount
-        return categoryWeight > 0 ? (categoryAchievementPct / 100) * categoryWeight : categoryAchievementPct
+        indexScore = categoryWeight > 0 ? (categoryAchievementPct / 100) * categoryWeight : categoryAchievementPct
       }
-      return 0
+
+      return { indexScore, priorityScore }
     }
 
-    const p1 = Number(calcCategoryScore('P1').toFixed(2))
-    const p2 = Number(calcCategoryScore('P2').toFixed(2))
-    const p3 = Number(calcCategoryScore('P3').toFixed(2))
+    const p1Res = calcCategoryScore('P1')
+    const p2Res = calcCategoryScore('P2')
+    const p3Res = calcCategoryScore('P3')
+
+    const p1 = Number(p1Res.indexScore.toFixed(2))
+    const p2 = Number(p2Res.indexScore.toFixed(2))
+    const p3 = Number(p3Res.indexScore.toFixed(2))
+
+    const p1_priority = Number(p1Res.priorityScore.toFixed(2))
+    const p2_priority = Number(p2Res.priorityScore.toFixed(2))
+    const p3_priority = Number(p3Res.priorityScore.toFixed(2))
+
+    const total_priority_score = Number((p1_priority + p2_priority + p3_priority).toFixed(2))
 
     // Catch-all for assessments in other categories to ensure they are added to assessmentDetails
     const remainingAssessments = empAssessments.filter((a: any) => !processedIndices.has(`${a.employee_id}:${a.indicator_id}`))
@@ -675,6 +702,8 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
 
     return {
       p1, p2, p3,
+      p1_priority, p2_priority, p3_priority,
+      total_priority_score,
       totalScore: Number((p1 + p2 + p3).toFixed(2)),
       totalActivityRupiah: Number(totalActivityRupiah),
       assessmentDetails
@@ -682,7 +711,7 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
   }
 
   // --- First pass: calculate ALL employee scores and unit totals ---
-  const employeeScoresMap = new Map<string, { emp: any; p1: number; p2: number; p3: number; totalScore: number; totalActivityRupiah: number; assessmentDetails: any[] }>()
+  const employeeScoresMap = new Map<string, { emp: any; p1: number; p2: number; p3: number; p1_priority: number; p2_priority: number; p3_priority: number; total_priority_score: number; totalScore: number; totalActivityRupiah: number; assessmentDetails: any[] }>()
   const unitTotalScoresMap = new Map<string, number>()
   const unitTotalActivityMap = new Map<string, number>()
   const unitEmployeeCountMap = new Map<string, number>()
@@ -734,17 +763,12 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
       const { data: masterDocs } = await supabase
         .from('remunerasi_master_dokter')
         .select('pagu_guarantee_fee')
-      // Ideally we filter by employees in this unit
+        .eq('periode_id', period)
 
-      const totalGuaranteeFee = masterDocs?.reduce((acc: number, d: any) => acc + Number(d.pagu_guarantee_fee), 0) || 0
+      const totalGuaranteeFee = masterDocs?.reduce((acc: number, d: any) => acc + Number(d.pagu_guarantee_fee || 0), 0) || 0
       const sisaPaguMedis = allocatedForUnit - totalGuaranteeFee - totalActivityValueUnit
 
-      // If sum of deductions exceeds allocated pool, standard handling
-      if (sisaPaguMedis <= 0) {
-        pir = 0
-      } else {
-        pir = totalSkorUnit > 0 ? sisaPaguMedis / totalSkorUnit : 0
-      }
+      pir = (totalSkorUnit > 0 && sisaPaguMedis > 0) ? (sisaPaguMedis / totalSkorUnit) : 0
     } else {
       // STANDARD Style (Non-Medical) with Activity deduction:
       // PIR = (AllocatedForUnit - TotalActivityValueUnit) / TotalSkorUnit
@@ -754,7 +778,8 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
       if (pir < 0) pir = 0;
     }
 
-    unitPIRMap.set(uId, pir)
+    const roundedPir = Number(pir.toFixed(2));
+    unitPIRMap.set(uId, roundedPir)
 
     // Save audit trail (using original field names)
     // Note: pir_value reflects the merit indices value, 
@@ -782,7 +807,7 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
   for (const [empId, data] of employeeScoresMap.entries()) {
     if (!reportEmployeeIds.has(empId)) continue
 
-    const { emp, p1, p2, p3, totalScore, totalActivityRupiah, assessmentDetails } = data
+    const { emp, p1, p2, p3, p1_priority, p2_priority, p3_priority, total_priority_score, totalScore, totalActivityRupiah, assessmentDetails } = data
 
     // Relaxed condition: Include employee if they were fetched in our assessment queries.
     // If they were in empIds and we fetched something (main or sub), they should be here.
@@ -801,13 +826,13 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
 
     const isMedical = isMedicalUnit(uId, unitName)
 
-    // Formula: (Total Skor x PIR) + Total Activity Rupiah
+    // Formula: (Total Indeks x PIR) + Insentif Berbasis Prioritas
     const indexIncentive = totalScore * pir
     let grossIncentive = Number(indexIncentive) + Number(totalActivityRupiah)
 
     let guaranteeFee = 0
     if (isMedical) {
-      // For doctors, also add Guarantee Fee
+      // For doctors, guarantee fee can be added if configured
       const { data: doctorMaster } = await supabase
         .from('remunerasi_master_dokter')
         .select('pagu_guarantee_fee')
@@ -862,6 +887,10 @@ async function generateIncentiveReport(supabase: any, period: string, unitId?: s
       p1_score: p1,
       p2_score: p2,
       p3_score: p3,
+      p1_priority: p1_priority || 0,
+      p2_priority: p2_priority || 0,
+      p3_priority: p3_priority || 0,
+      total_priority_score: total_priority_score || totalActivityRupiah || 0,
       p1_weight: getCatWeight('P1'),
       p2_weight: getCatWeight('P2'),
       p3_weight: getCatWeight('P3'),

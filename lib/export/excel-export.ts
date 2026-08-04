@@ -33,7 +33,7 @@ export async function exportToExcel(options: ReportExportOptions): Promise<Buffe
     case 'employee-slip':
       sheetName = reportType === 'incentive' ? 'Incentive Report' : 'Employee Slip'
       wsData = [
-        ['NIP/NIK', 'NIK', 'Nama Pegawai', 'Unit', 'Status Pegawai', 'Golongan', 'Nama Bank', 'No. Rekening', 'Nama Pemilik Rek', 'Status Pajak', 'P1 Score', 'P2 Score', 'P3 Score', 'Total Skor', 'PIR', 'Rupiah Kuantitatif', 'Insentif Bruto', 'Pajak', 'Keterangan Pajak', 'Insentif Netto'],
+        ['NIP/NIK', 'NIK', 'Nama Pegawai', 'Unit', 'Status Pegawai', 'Golongan', 'Nama Bank', 'No. Rekening', 'Nama Pemilik Rek', 'Status Pajak', 'P1', 'P2', 'P3', 'Total Indeks', 'Insentif Prioritas (Rp)', 'PIR', 'Insentif Bruto', 'Pajak', 'Keterangan Pajak', 'Insentif Netto'],
         ...data.map((row: any) => [
           row.employee_code || '-',
           row.nik || '-',
@@ -49,8 +49,8 @@ export async function exportToExcel(options: ReportExportOptions): Promise<Buffe
           Number(Number(row.p2_score || 0).toFixed(2)),
           Number(Number(row.p3_score || 0).toFixed(2)),
           Number(Number(row.total_score || 0).toFixed(2)),
+          Math.round(row.total_priority_score || row.total_activity_rupiah || row.total_activity || 0),
           Number(Number(row.pir_value || 0).toFixed(2)),
-          Math.round(row.total_activity_rupiah || row.total_activity || 0),
           Math.round(row.gross_incentive || 0),
           Math.round(row.tax_amount || 0),
           row.tax_detail || '-',

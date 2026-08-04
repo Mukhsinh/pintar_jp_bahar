@@ -267,6 +267,8 @@ async function getAssessmentReport(supabase: any, currentEmp: any, period: strin
     const employeeId = assessment.employee_id
     const indicatorName = assessment.m_kpi_indicators?.name || '-'
 
+    const isPriority = assessment.m_kpi_indicators?.calculation_method === 'priority'
+
     // Collect employee total scores
     if (!employeeScores.has(employeeId)) {
       employeeScores.set(employeeId, {
@@ -279,10 +281,12 @@ async function getAssessmentReport(supabase: any, currentEmp: any, period: strin
       })
     }
     const empData = employeeScores.get(employeeId)
-    empData.scores.push(score)
-    if (category === 'p1') empData.p1_scores.push(score)
-    else if (category === 'p2') empData.p2_scores.push(score)
-    else if (category === 'p3') empData.p3_scores.push(score)
+    if (!isPriority) {
+      empData.scores.push(score)
+      if (category === 'p1') empData.p1_scores.push(score)
+      else if (category === 'p2') empData.p2_scores.push(score)
+      else if (category === 'p3') empData.p3_scores.push(score)
+    }
 
     // Collect indicator achievements for improvement areas
     if (!indicatorAchievements.has(indicatorName)) {

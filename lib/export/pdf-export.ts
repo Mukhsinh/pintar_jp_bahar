@@ -499,19 +499,18 @@ export async function generateSummaryReportPDF(
     })
   } else {
     // Default to incentive
-    head = [['No', 'NIP/NIK', 'NIK', 'Nama Pegawai', 'Unit', 'P1', 'P2', 'P3', 'Skor Akhir', 'PIR', 'Kuantitatif', 'Insentif Bruto', 'Pajak', 'Insentif Neto']]
+    head = [['No', 'NIP/NIK', 'Nama Pegawai', 'Unit', 'P1', 'P2', 'P3', 'Total Indeks', 'Insentif Prioritas', 'PIR', 'Insentif Bruto', 'Pajak', 'Netto']]
     body = results.map((r, i) => [
       i + 1,
       r.employee_code || '-',
-      r.nik || '-',
       r.employee_name,
       r.unit,
       formatScore(r.p1_score),
       formatScore(r.p2_score),
       formatScore(r.p3_score),
       formatScore(r.total_score),
+      Math.round(Number(r.total_priority_score || r.total_activity_rupiah || r.total_activity || 0)).toLocaleString('id-ID'),
       formatScore(r.pir_value),
-      Math.round(Number(r.total_activity_rupiah || r.total_activity || 0)).toLocaleString('id-ID'),
       Math.round(Number(r.gross_incentive) || 0).toLocaleString('id-ID'),
       Math.round(Number(r.tax_amount) || 0).toLocaleString('id-ID'),
       Math.round(Number(r.net_incentive) || 0).toLocaleString('id-ID')
@@ -521,8 +520,8 @@ export async function generateSummaryReportPDF(
       head,
       body,
       theme: 'grid',
-      headStyles: { fillColor: [44, 62, 80], textColor: 255 },
-      styles: { fontSize: 8 }
+      headStyles: { fillColor: [44, 62, 80], textColor: 255, fontSize: 8 },
+      styles: { fontSize: 8, cellPadding: 2 }
     })
   }
 

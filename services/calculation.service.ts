@@ -51,7 +51,7 @@ export async function calculateIndividualScores(period: string) {
   // Use batch query to eliminate N+1 problem
   const { dataFetcher } = await import('@/lib/utils/data-fetcher')
   let employeesWithKPIData: any[] = []
-  
+
   try {
     const { data, error } = await dataFetcher.getEmployeesWithKPIData(null, period)
     if (error) throw error
@@ -100,7 +100,7 @@ export async function calculateIndividualScores(period: string) {
         target_value: targetValue,
         weight_percentage: weightPercentage,
         category: category as 'P1' | 'P2' | 'P3',
-        is_activity: indicator.m_kpi_categories.configuration_style === 'activity',
+        is_activity: indicator.calculation_method === 'priority',
         basic_index_value: subIndicator?.base_index_value || indicator.basic_index_value || 0,
         measurement_type: subIndicator?.measurement_type || 'scoring',
         unit_tariff: subIndicator?.unit_tariff || 0

@@ -114,50 +114,61 @@ function IncentiveTable({ data }: { data: any[] }) {
   if (!Array.isArray(data)) {
     return <div>Data must be an array, but received: {typeof data}</div>;
   }
+  const headers = [
+    'NIP/NIK', 'NAMA PEGAWAI', 'UNIT',
+    'P1', 'P2', 'P3', 'TOTAL INDEKS',
+    'INSENTIF PRIORITAS', 'PIR', 'INSENTIF BRUTO', 'PAJAK', 'NETTO'
+  ]
+  const rightAligned = [
+    'P1', 'P2', 'P3', 'TOTAL INDEKS',
+    'INSENTIF PRIORITAS', 'PIR', 'INSENTIF BRUTO', 'PAJAK', 'NETTO'
+  ]
+
   return (
-    <table className="w-full border-collapse text-sm">
-      <thead>
-        <tr className="bg-gray-100">
-          {['NIP/NIK', 'NAMA PEGAWAI', 'UNIT', 'P1', 'P2', 'P3', 'SKOR INDEKS', 'PIR', 'RUPIAH KUANTITATIF', 'GROSS', 'PAJAK', 'NET'].map(h => (
-            <th key={h} className={`border p-2 ${['P1', 'P2', 'P3', 'SKOR INDEKS', 'PIR', 'RUPIAH KUANTITATIF', 'GROSS', 'PAJAK', 'NET'].includes(h) ? 'text-right' : 'text-left'} font-semibold text-[10px]`}>{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((row: any, idx: number) => (
-          <tr key={idx} className="hover:bg-gray-50 text-xs text-left">
-            <td className="border p-2 whitespace-nowrap">{safeRender(row.employee_code || '-')}</td>
-            <td className="border p-2 font-medium min-w-[150px]">{safeRender(row.employee_name)}</td>
-            <td className="border p-2 whitespace-nowrap">{safeRender(row.unit)}</td>
-            <td className="border p-2 text-right">{formatNumber(Number(row.p1_score) || 0, 2)}</td>
-            <td className="border p-2 text-right">{formatNumber(Number(row.p2_score) || 0, 2)}</td>
-            <td className="border p-2 text-right">{formatNumber(Number(row.p3_score) || 0, 2)}</td>
-            <td className="border p-2 text-right font-bold text-blue-700">{formatNumber(Number(row.total_score) || 0, 2)}</td>
-            <td className="border p-2 text-right text-purple-600">{formatCurrency(Number(row.pir_value) || 0)}</td>
-            <td className="border p-2 text-right font-semibold text-orange-600">
-              <div className="text-[10px] text-gray-400">Total Kuantitatif</div>
-              {formatCurrency(Number(row.total_activity) || Number(row.total_activity_rupiah) || 0)}
-            </td>
-            <td className="border p-2 text-right font-bold">
-              <div className="text-[10px] text-gray-400 font-normal">(Skor×PIR) + Kuantitatif</div>
-              {formatCurrency(Number(row.gross_incentive) || 0)}
-            </td>
-            <td className="border p-2 text-right text-red-600">
-              {formatCurrency(Number(row.tax_amount) || 0)}
-              {row.tax_detail && typeof row.tax_detail === 'string' && row.tax_detail !== '-' && (
-                <div className="text-[10px] text-gray-500 italic">({row.tax_detail})</div>
-              )}
-            </td>
-            <td className="border p-2 text-right font-bold text-green-700">
-              <div className="text-[10px] text-gray-400 font-normal">
-                {row.tax_mechanism_used === 'none' ? 'Incentive (Sebelum Pajak)' : 'Take Home Pay'}
-              </div>
-              {formatCurrency(Number(row.net_incentive) || 0)}
-            </td>
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-sm min-w-[1100px]">
+        <thead>
+          <tr className="bg-gray-100">
+            {headers.map(h => (
+              <th key={h} className={`border p-2 ${rightAligned.includes(h) ? 'text-right' : 'text-left'} font-semibold text-[10px] whitespace-nowrap`}>{h}</th>
+            ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {data.map((row: any, idx: number) => (
+            <tr key={idx} className="hover:bg-gray-50 text-xs text-left">
+              <td className="border p-2 whitespace-nowrap">{safeRender(row.employee_code || '-')}</td>
+              <td className="border p-2 font-medium min-w-[150px]">{safeRender(row.employee_name)}</td>
+              <td className="border p-2 whitespace-nowrap">{safeRender(row.unit)}</td>
+              <td className="border p-2 text-right font-mono text-gray-700">{formatNumber(Number(row.p1_score) || 0, 2)}</td>
+              <td className="border p-2 text-right font-mono text-gray-700">{formatNumber(Number(row.p2_score) || 0, 2)}</td>
+              <td className="border p-2 text-right font-mono text-gray-700">{formatNumber(Number(row.p3_score) || 0, 2)}</td>
+              <td className="border p-2 text-right font-bold font-mono text-blue-700">{formatNumber(Number(row.total_score) || 0, 2)}</td>
+              <td className="border p-2 text-right font-semibold text-orange-600 font-mono">
+                {formatCurrency(Number(row.total_priority_score) || Number(row.total_activity_rupiah) || Number(row.total_activity) || 0)}
+              </td>
+              <td className="border p-2 text-right text-purple-600 font-mono font-medium">{formatCurrency(Number(row.pir_value) || 0, true, 2)}</td>
+              <td className="border p-2 text-right font-bold font-mono text-slate-800">
+                <div className="text-[9px] text-gray-400 font-normal">(Indeks × PIR) + Prioritas</div>
+                {formatCurrency(Number(row.gross_incentive) || 0)}
+              </td>
+              <td className="border p-2 text-right text-red-600 font-mono">
+                {formatCurrency(Number(row.tax_amount) || 0)}
+                {row.tax_detail && typeof row.tax_detail === 'string' && row.tax_detail !== '-' && (
+                  <div className="text-[9px] text-gray-500 italic font-sans">({row.tax_detail})</div>
+                )}
+              </td>
+              <td className="border p-2 text-right font-bold text-green-700 font-mono">
+                <div className="text-[9px] text-gray-400 font-normal font-sans">
+                  {row.tax_mechanism_used === 'none' ? 'Insentif Bruto' : 'Take Home Pay'}
+                </div>
+                {formatCurrency(Number(row.net_incentive) || 0)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
@@ -184,7 +195,7 @@ function UnitComparisonTable({ data }: { data: any[] }) {
             <td className="border p-2 text-right text-orange-600">{formatCurrency(row.average_priority || 0)}</td>
             <td className="border p-2 text-right">{formatNumber(row.total_unit_score || 0, 2)}</td>
             <td className="border p-2 text-right text-orange-700">{formatCurrency(row.total_unit_activity || 0)}</td>
-            <td className="border p-2 text-right text-purple-600">{formatCurrency(row.pir_value || 0)}</td>
+            <td className="border p-2 text-right text-purple-600">{formatCurrency(row.pir_value || 0, true, 2)}</td>
             <td className="border p-2 text-right font-bold text-green-700">{formatCurrency(row.total_incentive || 0)}</td>
             <td className="border p-2 text-right">{safeRender(row.employee_count)}</td>
           </tr>

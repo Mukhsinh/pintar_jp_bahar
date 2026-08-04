@@ -45,7 +45,7 @@ export function formatDecimal(value: number | string, maxDecimals: number = 4): 
  * @param showSymbol - Whether to show Rp symbol (default: true)
  * @returns Formatted currency string
  */
-export function formatCurrency(value: number | string, showSymbol: boolean = true): string {
+export function formatCurrency(value: number | string, showSymbol: boolean = true, decimals: number = 0): string {
   const num = typeof value === 'string' ? parseFloat(value) : value
 
   if (isNaN(num)) {
@@ -56,12 +56,12 @@ export function formatCurrency(value: number | string, showSymbol: boolean = tru
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     }).format(num)
   }
 
-  return formatNumber(num, 0)
+  return formatNumber(num, decimals)
 }
 
 /**
